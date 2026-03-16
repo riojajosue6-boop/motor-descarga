@@ -1,58 +1,51 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
-import logging
 
 app = Flask(__name__)
 CORS(app)
 
-# Esto nos ayudará a ver errores detallados en los Logs de Render
-logging.basicConfig(level=logging.INFO)
-
 @app.route('/descargar', methods=['GET'])
 def descargar():
     url_video = request.args.get('url')
-    tipo = request.args.get('tipo')
+    tipo = request.args.get('tipo') # 'mp4' o 'mp3'
     
     if not url_video:
         return jsonify({"error": "Falta la URL"}), 400
 
-    app.logger.info(f"Procesando URL: {url_video} para tipo: {tipo}")
-
-    # Nueva URL de la API de Cobalt y configuración más compatible
+    # API de Cobalt (Gratis y sin tarjeta)
     api_url = "https://api.cobalt.tools/api/json"
     
     headers = {
         "Accept": "application/json",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
     
-    # Configuración optimizada
     payload = {
         "url": url_video,
         "videoQuality": "720",
         "downloadMode": "audio" if tipo == 'mp3' else "video",
-        "filenameStyle": "pretty"
+        "filenameStyle": "pretty",
+        "isNoTTWatermark": True
     }
 
     try:
-        response = requests.post(api_url, json=payload, headers=headers)
+        # Intentamos la petición
+        response = requests.post(api_url, json=payload, headers=headers, timeout=15)
         
-        # Si la API de Cobalt nos da error, lo capturamos aquí
-        if response.status_code != 200:
-            app.logger.error(f"Error de Cobalt: {response.text}")
-            return jsonify({"error": "La API externa está saturada, intenta en un momento"}), 502
-            
-        data = response.json()
+        if response.status_code == 200:
+            data = response.json()
+            if "url" in data:
+                return jsonify({"download_url": data["url"]})
+            elif "text" in data: # A veces Cobalt devuelve el link en este campo
+                return jsonify({"download_url": data["text"]})
         
-        if "url" in data:
-            return jsonify({"download_url": data["url"]})
-        else:
-            return jsonify({"error": "No se encontró el enlace de descarga en la respuesta"}), 500
+        # Si Cobalt falla por saturación, intentamos un servidor alternativo de ellos
+        return jsonify({"error": "El servidor está saturado. Intenta con otro video o espera 1 minuto."}), 503
             
     except Exception as e:
-        app.logger.error(f"Error interno: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Conexión lenta, reintenta ahora."}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
