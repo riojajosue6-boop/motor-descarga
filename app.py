@@ -14,12 +14,12 @@ def descargar():
         return jsonify({"error": "Falta la URL del video"}), 400
 
     # CONFIGURACIÓN PROFESIONAL DE RAPIDAPI
-    api_url = "https://social-all-in-one.p.rapidapi.com/v1/social/autolink"
+    api_url = "https://auto-download-all-in-one.p.rapidapi.com/v1/social/autolink"
     
     # IMPORTANTE: Reemplaza 'TU_LLAVE_DE_RAPIDAPI' con la clave que copiaste de RapidAPI
     headers = {
         "x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed14058", 
-        "x-rapidapi-host": "social-all-in-one.p.rapidapi.com",
+        "x-rapidapi-host": "auto-download-all-in-one.p.rapidapi.com",
         "Content-Type": "application/json"
     }
     
