@@ -3,23 +3,30 @@ from flask_cors import CORS
 import requests
 
 app = Flask(__name__)
+# Permitimos que cualquier página (tu frontend) llame a este servidor
 CORS(app)
 
+# RUTA 1: Para verificar que el servidor está despierto
 @app.route('/')
 def home():
-    return "ONLINE"
+    return "Servidor del Descargador: ONLINE"
 
-# Esta configuracion acepta /descargar y /descargar/ por igual
+# RUTA 2: El motor de descarga (Acepta con y sin barra final)
 @app.route('/descargar', methods=['GET'], strict_slashes=False)
 @app.route('/descargar/', methods=['GET'], strict_slashes=False)
 def descargar():
-
+    # 1. Obtenemos los datos de la URL
     url_video = request.args.get('url')
-    tipo = request.args.get('tipo')
+    tipo = request.args.get('tipo', 'mp4') # Por defecto mp4
     
     if not url_video:
         return jsonify({"error": "Falta la URL en los parametros"}), 400
 
+    # 2. Limpieza de URL (Elimina basura de rastreo de YouTube para que la API no falle)
+    # Transforma: https://youtu.be/video?si=123 -> https://youtu.be/video
+    url_limpia = url_video.split('?')[0].split('&')[0]
+
+    # 3. Configuración de RapidAPI
     api_url = "https://auto-download-all-in-one.p.rapidapi.com/v1/social/autolink"
     
     headers = {
@@ -28,29 +35,40 @@ def descargar():
         "Content-Type": "application/json"
     }
     
-    payload = { "url": url_video }
+    payload = { "url": url_limpia }
 
     try:
+        # Llamada a la API externa
         response = requests.post(api_url, json=payload, headers=headers, timeout=20)
-        data = response.json()
         
-        links = data.get("result", [])
-        if links:
-            # Busqueda robusta del enlace
-            enlace = links[0]['url'] # Por defecto el primero
-            for l in links:
-                if tipo == 'mp3' and (l.get('type') == 'audio' or 'mp3' in l.get('extension', '')):
-                    enlace = l['url']
-                    break
-                if tipo == 'mp4' and l.get('extension') == 'mp4':
-                    enlace = l['url']
-                    break
+        if response.status_code == 200:
+            data = response.json()
+            links = data.get("result", [])
             
-            return jsonify({"download_url": enlace})
+            if links:
+                # Buscamos el mejor enlace según lo que pidió el usuario
+                enlace_final = links[0]['url'] # Por defecto el primero
+                
+                for item in links:
+                    ext = str(item.get('extension', '')).lower()
+                    tipo_item = str(item.get('type', '')).lower()
+                    
+                    if tipo == 'mp3':
+                        if 'mp3' in ext or tipo_item == 'audio':
+                            enlace_final = item['url']
+                            break
+                    elif tipo == 'mp4':
+                        if 'mp4' in ext:
+                            enlace_final = item['url']
+                            break
+                
+                return jsonify({"download_url": enlace_final})
+            
+            return jsonify({"error": "La API no encontró enlaces para este video"}), 404
         
-        return jsonify({"error": "API no encontro enlaces"}), 404
-    except Exception as e:
-        return jsonify({"error": f"Error interno: {str(e)}"}), 500
+        return jsonify({"error": f"Error de API externa: {response.status_code}"}), response.status_code
 
-if __name__ == '__main__':
-    app.run()
+    except Exception as e:
+        return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
+
+# No es necesario app.run() para Gunicorn en Render
