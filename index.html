@@ -177,7 +177,9 @@
                 // ANTES decía algo como: https://motor-descarga.onrender.com/descargar...
 // AHORA debe decir simplemente:
                 // Busca esta línea y déjala así:
-                const response = await fetch(`/descargar?url=${encodeURIComponent(videoUrl)}&tipo=${formatoSeleccionado}`);
+                // Busca esta línea en tu index.html
+                const urlServidor = "/descargar"; 
+                const response = await fetch(`${urlServidor}?url=${encodeURIComponent(videoUrl)}&tipo=${formatoSeleccionado}`);
                 const data = await response.json();
 
                 if (data.download_url) {
