@@ -174,7 +174,7 @@
             const btn = document.getElementById('btn-descarga-final');
 
             try {
-                const response = await fetch(`https://motor-descarga.onrender.com/descargar?url=${encodeURIComponent(videoUrl)}&tipo=${formatoSeleccionado}`);
+                const response = await fetch(`/descargar?url=${encodeURIComponent(videoUrl)}&tipo=${formatoSeleccionado}`);
                 const data = await response.json();
 
                 if (data.download_url) {
