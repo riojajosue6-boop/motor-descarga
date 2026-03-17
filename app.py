@@ -1,19 +1,18 @@
-import os
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import requests
+import os
 
 app = Flask(__name__, static_folder='.')
 CORS(app)
 
-# 1. RUTA PARA MOSTRAR TU PÁGINA WEB
 @app.route('/')
-def serve_index():
+def index():
     return send_from_directory('.', 'index.html')
 
-# 2. RUTA PARA EL MOTOR DE DESCARGA
-@app.route('/descargar', methods=['GET'])
+@app.route('/descargar', methods=['GET'], strict_slashes=False)
 def descargar():
+    # ... todo tu código de descarga aquí ...
     url_video = request.args.get('url')
     tipo = request.args.get('tipo', 'mp4')
     
