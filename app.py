@@ -3,17 +3,17 @@ from flask_cors import CORS
 import requests
 import os
 
-# Inicializamos Flask y le decimos que busque archivos en la carpeta actual
+# Forzamos a Flask a ser flexible con las rutas
 app = Flask(__name__, static_folder='.')
 CORS(app)
 
-# 1. ESTA RUTA CARGA TU PÁGINA (index.html)
+# 1. RUTA PRINCIPAL (Servir el HTML)
 @app.route('/')
 def index():
     return send_from_directory('.', 'index.html')
 
-# 2. ESTA RUTA PROCESA LA DESCARGA
-@app.route('/descargar', methods=['GET'], strict_slashes=False)
+# 2. RUTA DE DESCARGA (Blindada contra 404)
+@app.route('/descargar', methods=['GET', 'POST'], strict_slashes=False)
 def descargar():
     url_video = request.args.get('url')
     tipo = request.args.get('tipo', 'mp4')
@@ -21,7 +21,7 @@ def descargar():
     if not url_video:
         return jsonify({"error": "Falta la URL"}), 400
 
-    # Limpieza de URL para la API
+    # Limpiamos la URL de rastreadores (?si=...)
     url_limpia = url_video.split('?')[0].split('&')[0]
 
     api_url = "https://auto-download-all-in-one.p.rapidapi.com/v1/social/autolink"
@@ -52,6 +52,7 @@ def descargar():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Esto ayuda a Render a encontrar el puerto correcto
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
