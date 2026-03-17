@@ -27,7 +27,10 @@ def descargar():
         "Content-Type": "application/json"
     }
     
-    payload = { "url": url_video }
+   # Limpiamos la URL para que sea solo el link base
+    url_limpia = url_video.split('&')[0].split('?si=')[0]
+    
+    payload = { "url": url_limpia }
 
     try:
         response = requests.post(api_url, json=payload, headers=headers, timeout=20)
