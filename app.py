@@ -5,7 +5,7 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
-@app.route('/descargar', methods=['GET'])
+@app.route('/descargar', methods=['GET'], strict_slashes=False)
 def descargar():
     url_video = request.args.get('url')
     tipo = request.args.get('tipo')
