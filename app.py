@@ -4,8 +4,7 @@ from flask import Flask, request, jsonify, render_template_string
 from flask_cors import CORS
 
 app = Flask(__name__)
-# Forzamos a que el JSON no destruya los acentos
-app.config['JSON_AS_ASCII'] = False 
+app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
 HTML_FINAL = """
@@ -13,41 +12,49 @@ HTML_FINAL = """
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Motor de Descarga</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Descargador Pro</title>
     <style>
-        body { background: #0f0f0f; color: white; font-family: sans-serif; text-align: center; padding: 50px; }
-        .card { background: #1a1a1a; padding: 30px; border-radius: 15px; display: inline-block; border: 1px solid #333; }
-        input { padding: 12px; width: 300px; border-radius: 5px; border: none; margin: 10px 0; background: #2a2a2a; color: white; }
-        button { background: #cc0000; color: white; padding: 12px 25px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
-        #status { margin-top: 20px; color: #ff4444; }
+        body { background: #0f0f0f; color: white; font-family: 'Segoe UI', sans-serif; text-align: center; padding: 40px; }
+        .card { background: #1a1a1a; padding: 30px; border-radius: 20px; display: inline-block; border: 1px solid #333; max-width: 400px; width: 90%; }
+        input { width: 90%; padding: 12px; margin: 15px 0; border-radius: 8px; border: none; background: #2a2a2a; color: white; }
+        button { width: 95%; padding: 12px; background: #cc0000; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        #status { margin-top: 20px; font-size: 14px; }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>🚀 Motor de Descarga</h1>
-        <input type="text" id="link" placeholder="Pega el link aquí">
-        <br>
-        <button onclick="bajar()">DESCARGAR AHORA</button>
+        <p>YouTube, TikTok e Instagram</p>
+        <input type="text" id="urlInput" placeholder="Pega el link aquí...">
+        <button onclick="descargar()">DESCARGAR AHORA</button>
         <div id="status"></div>
     </div>
+
     <script>
-        async function bajar() {
-            const link = document.getElementById('link').value;
-            const st = document.getElementById('status');
-            if(!link) return;
-            st.innerText = "⏳ Procesando...";
+        async function descargar() {
+            const url = document.getElementById('urlInput').value;
+            const status = document.getElementById('status');
+            if(!url) return alert("Pega un link");
+
+            status.style.color = "white";
+            status.innerText = "⏳ Procesando... esto toma unos segundos.";
+
             try {
-                // CAMBIO CLAVE: Usamos una ruta nueva para limpiar el cache
-                const r = await fetch('/descargar_motor?url=' + encodeURIComponent(link));
-                const d = await r.json();
-                if(d.url) {
-                    st.style.color = "#44ff44";
-                    st.innerText = "✅ ¡Enlace listo!";
-                    window.location.href = d.url;
+                const response = await fetch('/api/bajar?url=' + encodeURIComponent(url));
+                const data = await response.json();
+
+                if(data.download_url) {
+                    status.style.color = "#44ff44";
+                    status.innerText = "✅ ¡Enlace generado! Abriendo...";
+                    window.location.href = data.download_url;
                 } else {
-                    st.innerText = "❌ Error: " + (d.error || "No encontrado");
+                    status.style.color = "#ff4444";
+                    status.innerText = "❌ " + (data.error || "No se encontró el video");
                 }
-            } catch(e) { st.innerText = "❌ Error de conexión"; }
+            } catch (e) {
+                status.innerText = "❌ Error de conexión con el motor.";
+            }
         }
     </script>
 </body>
@@ -58,34 +65,49 @@ HTML_FINAL = """
 def home():
     return render_template_string(HTML_FINAL)
 
-# Cambiamos el nombre de la ruta para que Render no use el cache viejo
-@app.route('/descargar_motor')
-def engine():
-    u = request.args.get('url')
-    if not u: return jsonify({"error": "Pega una URL"}), 400
+@app.route('/api/bajar')
+def bajar():
+    video_url = request.args.get('url')
+    if not video_url:
+        return jsonify({"error": "Falta la URL"}), 400
 
-    # Limpieza total de URL
-    u = u.split('?')[0].split('&')[0]
+    # Limpieza de URL
+    video_url = video_url.split('?')[0].split('&')[0]
 
     headers = {
         "x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585",
-        "x-rapidapi-host": "auto-download-all-in-one.p.rapidapi.com"
+        "x-rapidapi-host": "auto-download-all-in-one.p.rapidapi.com",
+        "Content-Type": "application/json"
     }
 
     try:
-        # Petición a la API
-        res = requests.post("https://auto-download-all-in-one.p.rapidapi.com/v1/social/autolink", 
-                           json={"url": u}, headers=headers, timeout=20)
-        data = res.json()
+        # Petición POST exacta como tu prueba exitosa
+        r = requests.post(
+            "https://auto-download-all-in-one.p.rapidapi.com/v1/social/autolink",
+            json={"url": video_url},
+            headers=headers,
+            timeout=25
+        )
+        data = r.json()
         
-        links = data.get("result", [])
-        if links:
-            # Mandamos el primer link que encontremos
-            return jsonify({"url": links[0]['url']})
+        # --- NUEVA LÓGICA BASADA EN TU PRUEBA ---
+        # La API devuelve los links en un objeto/lista llamado 'medias'
+        medias = data.get("medias", {})
         
-        return jsonify({"error": "La API no encontró el video. Intenta con otro link."}), 404
+        if medias:
+            # Buscamos el primer link disponible (usualmente el 0 es video HD)
+            # Intentamos obtener el '0', si no, el primer valor que haya
+            primer_key = list(medias.keys())[0]
+            link_final = medias[primer_key].get("url")
+            
+            if link_final:
+                return jsonify({"download_url": link_final})
+        
+        return jsonify({"error": "La API no devolvió enlaces de descarga."}), 404
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
