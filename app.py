@@ -37,7 +37,7 @@ HTML_PREMIUM = """
     <nav><a onclick="location.reload()">Inicio</a><a>Privacidad</a><a>Términos</a></nav>
     <div class="ad-slot">PUBLICIDAD SUPERIOR</div>
     <div class="main-card">
-        <h1>🚀 MOTOR PRO</h1>
+        <h1>🚀 RIOJA JOSUE XD </h1>
         <p style="color:#666; margin-bottom:20px;">YouTube • TikTok • Facebook • Instagram</p>
         <input type="text" id="urlInput" placeholder="Pega el enlace aquí...">
         <div class="options">
