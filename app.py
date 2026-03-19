@@ -1,5 +1,6 @@
 import os
 import requests
+import re
 from flask import Flask, request, jsonify, render_template_string
 from flask_cors import CORS
 
@@ -7,7 +8,7 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-# --- DISEÑO PROFESIONAL MONETIZABLE ---
+# --- INTERFAZ PROFESIONAL ---
 HTML_PRO = """
 <!DOCTYPE html>
 <html lang="es">
@@ -25,114 +26,67 @@ HTML_PRO = """
         .main-container { background: var(--card); padding: 35px; border-radius: 25px; display: inline-block; border: 1px solid #222; max-width: 480px; width: 90%; margin-top: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
         h1 { color: var(--red); margin: 0 0 5px 0; font-size: 30px; }
         input { width: 90%; padding: 16px; margin: 20px 0; border-radius: 12px; border: 1px solid #333; background: #222; color: #fff; font-size: 16px; outline: none; }
-        .options { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
-        select { padding: 12px; border-radius: 8px; background: #222; color: white; border: 1px solid #444; flex: 1; }
         button { width: 95%; padding: 16px; background: var(--red); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 18px; cursor: pointer; transition: 0.3s; }
         button:disabled { background: #444; cursor: not-allowed; }
         #status { margin-top: 25px; font-weight: bold; min-height: 30px; }
-        .legal-page { display: none; max-width: 700px; margin: 40px auto; text-align: left; background: #111; padding: 30px; border-radius: 15px; color: #aaa; line-height: 1.6; }
         footer { padding: 40px; color: #444; font-size: 12px; }
     </style>
 </head>
 <body>
-
     <nav>
-        <a onclick="ir('home')">Inicio</a>
-        <a onclick="ir('privacidad')">Privacidad</a>
-        <a onclick="ir('terminos')">Términos</a>
+        <a onclick="alert('Ya estás en el Inicio')">Inicio</a>
+        <a onclick="alert('Política: No guardamos tus datos.')">Privacidad</a>
     </nav>
-
-    <div class="ad-slot">PUBLICIDAD ADSENSE TOP </div>
-
-    <div id="home">
-        <div class="main-container">
-            <h1>🚀 Descargador Pro</h1>
-            <p style="color:#666; margin-bottom:20px;">YouTube • TikTok • Instagram • FB</p>
-            
-            <input type="text" id="urlIn" placeholder="Pega el link del video aquí...">
-            
-            <div class="options">
-                <select id="fmtIn">
-                    <option value="mp4">🎬 Video MP4</option>
-                    <option value="mp3">🎵 Audio MP3</option>
-                </select>
-            </div>
-
-            <button id="btnGo" onclick="start()">DESCARGAR AHORA</button>
-            <div id="status"></div>
-        </div>
+    <div class="ad-slot">ESPACIO PUBLICIDAD ADSENSE</div>
+    <div class="main-container">
+        <h1>🚀 Motor Pro</h1>
+        <p style="color:#666;">YouTube • TikTok • Facebook • Instagram</p>
+        <input type="text" id="urlIn" placeholder="Pega el link aquí...">
+        <button id="btnGo" onclick="start()">DESCARGAR EN 5s</button>
+        <div id="status"></div>
     </div>
-
-    <div id="privacidad" class="legal-page">
-        <h2>Política de Privacidad</h2>
-        <p>En Descargador Pro respetamos tu privacidad. No almacenamos registros de tus descargas ni datos personales. Este sitio utiliza cookies de Google AdSense para mostrar anuncios relevantes.</p>
-    </div>
-
-    <div id="terminos" class="legal-page">
-        <h2>Términos de Uso</h2>
-        <p>Esta herramienta es para uso personal. El usuario es responsable de cumplir con las leyes de derechos de autor de su país. No nos hacemos responsables del contenido descargado.</p>
-    </div>
-
-    <div class="ad-slot">PUBLICIDAD ADSENSE BOTTOM </div>
-
-    <footer>© 2026 Motor de Descarga | Hecho en Cochabamba 🇧🇴</footer>
+    <footer>© 2026 Descargador Cochabamba 🇧🇴</footer>
 
     <script>
-        function ir(id) {
-            ['home','privacidad','terminos'].forEach(p => document.getElementById(p).style.display = (p===id?'block':'none'));
-            window.scrollTo(0,0);
+        async function start() {
+            const u = document.getElementById('urlIn').value;
+            const b = document.getElementById('btnGo');
+            const s = document.getElementById('status');
+            if(!u) return alert("Pega un enlace");
+            b.disabled = true;
+            let c = 5;
+            const t = setInterval(async () => {
+                s.style.color = "#ffaa00";
+                s.innerText = `⏳ Procesando en ${c}...`;
+                c--;
+                if(c < 0) {
+                    clearInterval(t);
+                    s.innerText = "🚀 Conectando motores...";
+                    try {
+                        const res = await fetch(`/api/down?url=${encodeURIComponent(u)}`);
+                        const data = await res.json();
+                        if(data.url) {
+                            s.style.color = "#00ff88";
+                            s.innerText = "✅ ¡Listo! Abriendo descarga...";
+                            window.location.href = data.url;
+                        } else {
+                            s.style.color = "#ff4444";
+                            s.innerText = "❌ " + (data.error || "Error al obtener link");
+                        }
+                    } catch(e) { s.innerText = "❌ Error de servidor."; }
+                    b.disabled = false;
+                }
+            }, 1000);
         }
-
-      async function start() {
-        const u = document.getElementById('urlIn').value;
-        const t = document.getElementById('fmtIn').value;
-        const b = document.getElementById('btnGo');
-        const s = document.getElementById('status');
-
-        if(!u) return alert("Pega un enlace");
-
-        b.disabled = true;
-        let count = 5;
-        
-        const timer = setInterval(async () => {
-            s.style.color = "#ffaa00";
-            s.innerText = `⏳ Preparando enlace seguro en ${count}...`;
-            count--;
-
-            if(count < 0) {
-                clearInterval(timer);
-                s.innerText = "🚀 Saltando protecciones...";
-                try {
-                    const res = await fetch(`/api/down?url=${encodeURIComponent(u)}&type=${t}`);
-                    const data = await res.json();
-                    
-                    if(data.url) {
-                        s.style.color = "#00ff88";
-                        s.innerText = "✅ ¡Enlace verificado! Descargando...";
-                        
-                        // --- TRUCO PARA EVITAR EL ERROR 403 ---
-                        const link = document.createElement('a');
-                        link.href = data.url;
-                        link.setAttribute('download', ''); // Fuerza la descarga
-                        link.setAttribute('target', '_blank');
-                        link.setAttribute('rel', 'noreferrer'); // Oculta el origen a Google
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-
-                    } else {
-                        s.style.color = "#ff4444";
-                        s.innerText = "❌ " + (data.error || "Video no disponible");
-                    }
-                } catch(e) { s.innerText = "❌ Error de motor."; }
-                b.disabled = false;
-            }
-        }, 1000);
-    }
     </script>
 </body>
 </html>
 """
+
+def get_yt_id(url):
+    pattern = r'(?:v=|\/)([0-9A-Za-z_-]{11}).*'
+    match = re.search(pattern, url)
+    return match.group(1) if match else None
 
 @app.route('/')
 def index():
@@ -141,40 +95,42 @@ def index():
 @app.route('/api/down')
 def api_down():
     url = request.args.get('url')
-    fmt = request.args.get('type', 'mp4')
     if not url: return jsonify({"error": "No URL"}), 400
 
-    # Usamos la nueva API LITE que encontraste (es más estable)
-    api_url = f"https://download-all-in-one-lite.p.rapidapi.com/autolink"
-    headers = {
-        "x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585",
-        "x-rapidapi-host": "download-all-in-one-lite.p.rapidapi.com"
-    }
-
-    try:
-        # Petición GET con el parámetro url
-        r = requests.get(api_url, params={"url": url}, headers=headers, timeout=25)
-        data = r.json()
+    # DETERMINAR QUÉ MOTOR USAR
+    if "youtube.com" in url or "youtu.be" in url:
+        # --- MOTOR YOUTUBE (YT-API con Proxy) ---
+        yt_id = get_yt_id(url)
+        if not yt_id: return jsonify({"error": "ID de YouTube no válido"}), 400
         
-        # Esta API suele devolver una lista en 'medias' o 'result'
-        medias = data.get("medias", data.get("result", []))
-        
-        link = None
-        if isinstance(medias, list) and len(medias) > 0:
-            for m in medias:
-                if fmt == 'mp3' and 'audio' in str(m.get('type','')).lower():
-                    link = m.get('url'); break
-                if fmt == 'mp4' and 'video' in str(m.get('type','')).lower():
-                    link = m.get('url'); break
-            if not link: link = medias[0].get('url')
-        elif isinstance(medias, dict):
-            link = list(medias.values())[0].get('url')
-
-        if link: return jsonify({"url": link})
-        return jsonify({"error": "No se encontraron enlaces de descarga."}), 404
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        api_url = "https://yt-api.p.rapidapi.com/dl"
+        headers = {
+            "x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585",
+            "x-rapidapi-host": "yt-api.p.rapidapi.com"
+        }
+        try:
+            r = requests.get(api_url, params={"id": yt_id}, headers=headers, timeout=25)
+            data = r.json()
+            # Esta API entrega formatos en 'formats' o 'link'
+            link = data.get('link') or (data.get('formats', [{}])[0].get('url'))
+            if link: return jsonify({"url": link})
+            return jsonify({"error": "YouTube bloqueó este video específico"}), 403
+        except: return jsonify({"error": "Error en motor YouTube"}), 500
+    else:
+        # --- MOTOR REDES SOCIALES (API LITE) ---
+        headers = {
+            "x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585",
+            "x-rapidapi-host": "download-all-in-one-lite.p.rapidapi.com"
+        }
+        try:
+            r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", 
+                            params={"url": url}, headers=headers, timeout=25)
+            data = r.json()
+            medias = data.get("medias", data.get("result", []))
+            link = medias[0].get('url') if isinstance(medias, list) and medias else None
+            if link: return jsonify({"url": link})
+            return jsonify({"error": "Link no compatible"}), 404
+        except: return jsonify({"error": "Error en motor Lite"}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
