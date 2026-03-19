@@ -61,7 +61,7 @@ HTML_PREMIUM = """
         <div id="home-sec">
             <div class="ad-slot">ESPACIO PUBLICIDAD SUPERIOR</div>
             <div class="main-card">
-                <h1>🚀 MOTOR PRO</h1>
+                <h1>🚀 MOTOR DE DESCARGA</h1>
                 <input type="text" id="urlInput" placeholder="Pega el enlace de video aquí...">
                 <div class="options">
                     <select id="formatInput">
