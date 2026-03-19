@@ -83,41 +83,52 @@ HTML_PRO = """
             window.scrollTo(0,0);
         }
 
-        async function start() {
-            const u = document.getElementById('urlIn').value;
-            const t = document.getElementById('fmtIn').value;
-            const b = document.getElementById('btnGo');
-            const s = document.getElementById('status');
+      async function start() {
+        const u = document.getElementById('urlIn').value;
+        const t = document.getElementById('fmtIn').value;
+        const b = document.getElementById('btnGo');
+        const s = document.getElementById('status');
 
-            if(!u) return alert("Pega un enlace");
+        if(!u) return alert("Pega un enlace");
 
-            b.disabled = true;
-            let count = 5;
-            
-            const timer = setInterval(async () => {
-                s.style.color = "#ffaa00";
-                s.innerText = `⏳ Preparando descarga en ${count}...`;
-                count--;
+        b.disabled = true;
+        let count = 5;
+        
+        const timer = setInterval(async () => {
+            s.style.color = "#ffaa00";
+            s.innerText = `⏳ Preparando enlace seguro en ${count}...`;
+            count--;
 
-                if(count < 0) {
-                    clearInterval(timer);
-                    s.innerText = "🚀 Conectando con el motor...";
-                    try {
-                        const res = await fetch(`/api/down?url=${encodeURIComponent(u)}&type=${t}`);
-                        const data = await res.json();
-                        if(data.url) {
-                            s.style.color = "#00ff88";
-                            s.innerText = "✅ ¡Listo! Iniciando descarga...";
-                            window.location.href = data.url;
-                        } else {
-                            s.style.color = "#ff4444";
-                            s.innerText = "❌ " + (data.error || "Video no disponible");
-                        }
-                    } catch(e) { s.innerText = "❌ Error de conexión."; }
-                    b.disabled = false;
-                }
-            }, 1000);
-        }
+            if(count < 0) {
+                clearInterval(timer);
+                s.innerText = "🚀 Saltando protecciones...";
+                try {
+                    const res = await fetch(`/api/down?url=${encodeURIComponent(u)}&type=${t}`);
+                    const data = await res.json();
+                    
+                    if(data.url) {
+                        s.style.color = "#00ff88";
+                        s.innerText = "✅ ¡Enlace verificado! Descargando...";
+                        
+                        // --- TRUCO PARA EVITAR EL ERROR 403 ---
+                        const link = document.createElement('a');
+                        link.href = data.url;
+                        link.setAttribute('download', ''); // Fuerza la descarga
+                        link.setAttribute('target', '_blank');
+                        link.setAttribute('rel', 'noreferrer'); // Oculta el origen a Google
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+
+                    } else {
+                        s.style.color = "#ff4444";
+                        s.innerText = "❌ " + (data.error || "Video no disponible");
+                    }
+                } catch(e) { s.innerText = "❌ Error de motor."; }
+                b.disabled = false;
+            }
+        }, 1000);
+    }
     </script>
 </body>
 </html>
