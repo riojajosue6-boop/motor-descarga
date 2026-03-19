@@ -88,34 +88,58 @@ def get_yt_id(url):
     match = re.search(pattern, url)
     return match.group(1) if match else None
 
-@app.route('/')
-def index():
-    return render_template_string(HTML_PRO)
-
 @app.route('/api/down')
 def api_down():
     url = request.args.get('url')
     if not url: return jsonify({"error": "No URL"}), 400
 
-    # DETERMINAR QUÉ MOTOR USAR
+    # DETERMINAR MOTOR
     if "youtube.com" in url or "youtu.be" in url:
-        # --- MOTOR YOUTUBE (YT-API con Proxy) ---
         yt_id = get_yt_id(url)
-        if not yt_id: return jsonify({"error": "ID de YouTube no válido"}), 400
+        if not yt_id: return jsonify({"error": "ID de YouTube inválido"}), 400
         
+        # Nueva configuración para evitar el 502
         api_url = "https://yt-api.p.rapidapi.com/dl"
         headers = {
             "x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585",
             "x-rapidapi-host": "yt-api.p.rapidapi.com"
         }
         try:
-            r = requests.get(api_url, params={"id": yt_id}, headers=headers, timeout=25)
+            # Añadimos parámetros para que la API no trabaje de más
+            r = requests.get(api_url, params={"id": yt_id}, headers=headers, timeout=15)
             data = r.json()
-            # Esta API entrega formatos en 'formats' o 'link'
-            link = data.get('link') or (data.get('formats', [{}])[0].get('url'))
+            
+            # Buscamos el link en diferentes lugares según lo que responda esta API
+            link = None
+            if data.get('status') == 'OK':
+                # Intentamos obtener el link directo o el primer formato disponible
+                link = data.get('link') 
+                if not link and data.get('formats'):
+                    # Filtramos para que no sea solo audio, buscamos video
+                    for f in data['formats']:
+                        if f.get('url'):
+                            link = f['url']
+                            break
+            
             if link: return jsonify({"url": link})
-            return jsonify({"error": "YouTube bloqueó este video específico"}), 403
-        except: return jsonify({"error": "Error en motor YouTube"}), 500
+            return jsonify({"error": "La API de YouTube no respondió a tiempo. Intenta de nuevo."}), 502
+        except Exception as e: 
+            return jsonify({"error": "Error de conexión con el motor de YouTube"}), 502
+    else:
+        # MOTOR REDES SOCIALES (Sigue igual porque funciona bien)
+        headers = {
+            "x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585",
+            "x-rapidapi-host": "download-all-in-one-lite.p.rapidapi.com"
+        }
+        try:
+            r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", 
+                            params={"url": url}, headers=headers, timeout=20)
+            data = r.json()
+            medias = data.get("medias", data.get("result", []))
+            link = medias[0].get('url') if isinstance(medias, list) and medias else None
+            if link: return jsonify({"url": link})
+            return jsonify({"error": "Link no compatible"}), 404
+        except: return jsonify({"error": "Error en motor Lite"}), 500
     else:
         # --- MOTOR REDES SOCIALES (API LITE) ---
         headers = {
