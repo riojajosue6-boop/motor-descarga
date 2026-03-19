@@ -7,143 +7,116 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-# --- PLANTILLA TODO-EN-UNO (DISEÑO + LÓGICA + LEGAL) ---
+# --- DISEÑO PROFESIONAL MONETIZABLE ---
 HTML_PRO = """
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Descargador Pro - YouTube & TikTok</title>
+    <title>Descargador Pro | Cochabamba</title>
     <style>
-        :root { --red: #ff0000; --dark: #0a0a0a; --gray: #1a1a1a; }
-        body { background: var(--dark); color: #eee; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; }
-        nav { background: #000; padding: 15px; text-align: center; border-bottom: 1px solid #333; }
+        :root { --red: #ff0000; --dark: #0a0a0a; --card: #161616; }
+        body { background: var(--dark); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; text-align: center; }
+        nav { background: #000; padding: 15px; border-bottom: 1px solid #333; }
         nav a { color: #888; margin: 0 15px; text-decoration: none; font-size: 14px; cursor: pointer; }
         nav a:hover { color: var(--red); }
-        
-        .ad-banner { background: #111; border: 1px dashed #333; margin: 20px auto; padding: 15px; max-width: 728px; text-align: center; color: #444; }
-        
-        .main-card { background: var(--gray); padding: 30px; border-radius: 20px; max-width: 500px; margin: 20px auto; border: 1px solid #333; box-shadow: 0 15px 35px rgba(0,0,0,0.7); text-align: center; }
-        h1 { color: var(--red); margin: 0; font-size: 32px; }
-        input { width: 90%; padding: 15px; margin: 20px 0; border-radius: 10px; border: 1px solid #333; background: #222; color: #fff; font-size: 16px; outline: none; }
-        input:focus { border-color: var(--red); }
-        
-        .selectors { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
-        select { padding: 12px; border-radius: 8px; background: #222; color: white; border: 1px solid #444; cursor: pointer; }
-        
-        button { width: 95%; padding: 16px; background: var(--red); color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 18px; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #cc0000; transform: translateY(-2px); }
+        .ad-slot { background: #111; border: 1px dashed #444; margin: 20px auto; padding: 10px; max-width: 728px; min-height: 90px; color: #555; font-size: 11px; }
+        .main-container { background: var(--card); padding: 35px; border-radius: 25px; display: inline-block; border: 1px solid #222; max-width: 480px; width: 90%; margin-top: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        h1 { color: var(--red); margin: 0 0 5px 0; font-size: 30px; }
+        input { width: 90%; padding: 16px; margin: 20px 0; border-radius: 12px; border: 1px solid #333; background: #222; color: #fff; font-size: 16px; outline: none; }
+        .options { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
+        select { padding: 12px; border-radius: 8px; background: #222; color: white; border: 1px solid #444; flex: 1; }
+        button { width: 95%; padding: 16px; background: var(--red); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 18px; cursor: pointer; transition: 0.3s; }
         button:disabled { background: #444; cursor: not-allowed; }
-        
-        #status { margin-top: 25px; min-height: 30px; font-weight: 600; }
-        
-        .legal-content { max-width: 800px; margin: 40px auto; padding: 20px; display: none; background: #111; border-radius: 10px; font-size: 14px; line-height: 1.6; color: #aaa; text-align: left; }
-        footer { padding: 40px; text-align: center; color: #555; font-size: 12px; }
+        #status { margin-top: 25px; font-weight: bold; min-height: 30px; }
+        .legal-page { display: none; max-width: 700px; margin: 40px auto; text-align: left; background: #111; padding: 30px; border-radius: 15px; color: #aaa; line-height: 1.6; }
+        footer { padding: 40px; color: #444; font-size: 12px; }
     </style>
 </head>
 <body>
 
     <nav>
-        <a onclick="showPage('home')">Inicio</a>
-        <a onclick="showPage('privacy')">Privacidad</a>
-        <a onclick="showPage('terms')">Términos</a>
-        <a href="mailto:tu-correo@gmail.com">Contacto</a>
+        <a onclick="ir('home')">Inicio</a>
+        <a onclick="ir('privacidad')">Privacidad</a>
+        <a onclick="ir('terminos')">Términos</a>
     </nav>
 
-    <div class="ad-banner">
-        <small>PUBLICIDAD</small><br>
-        </div>
+    <div class="ad-slot">PUBLICIDAD ADSENSE TOP </div>
 
-    <div id="home-page">
-        <div class="main-card">
+    <div id="home">
+        <div class="main-container">
             <h1>🚀 Descargador Pro</h1>
-            <p style="color: #888;">Cochabamba - Servicio Gratuito</p>
+            <p style="color:#666; margin-bottom:20px;">YouTube • TikTok • Instagram • FB</p>
             
-            <input type="text" id="urlInput" placeholder="Pega el enlace de video aquí...">
+            <input type="text" id="urlIn" placeholder="Pega el link del video aquí...">
             
-            <div class="selectors">
-                <select id="formatInput">
+            <div class="options">
+                <select id="fmtIn">
                     <option value="mp4">🎬 Video MP4</option>
                     <option value="mp3">🎵 Audio MP3</option>
                 </select>
             </div>
 
-            <button id="btnAction" onclick="countdown()">DESCARGAR AHORA</button>
+            <button id="btnGo" onclick="start()">DESCARGAR AHORA</button>
             <div id="status"></div>
         </div>
     </div>
 
-    <div id="privacy" class="legal-content">
+    <div id="privacidad" class="legal-page">
         <h2>Política de Privacidad</h2>
-        <p>En Descargador Pro, valoramos tu privacidad. No almacenamos los videos que descargas ni tus datos personales. El servicio utiliza APIs de terceros para procesar las solicitudes. Al usar este sitio, aceptas el uso de cookies para publicidad personalizada a través de Google AdSense.</p>
+        <p>En Descargador Pro respetamos tu privacidad. No almacenamos registros de tus descargas ni datos personales. Este sitio utiliza cookies de Google AdSense para mostrar anuncios relevantes.</p>
     </div>
 
-    <div id="terms" class="legal-content">
-        <h2>Términos de Servicio</h2>
-        <p>Este sitio es una herramienta para descargar contenido de uso personal. No nos hacemos responsables del mal uso del material descargado. Asegúrate de tener los derechos del contenido que intentas bajar. Queda prohibida la descarga de material con derechos de autor protegidos para fines comerciales.</p>
+    <div id="terminos" class="legal-page">
+        <h2>Términos de Uso</h2>
+        <p>Esta herramienta es para uso personal. El usuario es responsable de cumplir con las leyes de derechos de autor de su país. No nos hacemos responsables del contenido descargado.</p>
     </div>
 
-    <div class="ad-banner">
-        <small>PUBLICIDAD</small><br>
-        </div>
+    <div class="ad-slot">PUBLICIDAD ADSENSE BOTTOM </div>
 
-    <footer>
-        © 2026 Motor de Descarga Cochabamba | Orgullosamente Boliviano 🇧🇴
-    </footer>
+    <footer>© 2026 Motor de Descarga | Hecho en Cochabamba 🇧🇴</footer>
 
     <script>
-        function showPage(pageId) {
-            document.getElementById('home-page').style.display = pageId === 'home' ? 'block' : 'none';
-            document.getElementById('privacy').style.display = pageId === 'privacy' ? 'block' : 'none';
-            document.getElementById('terms').style.display = pageId === 'terms' ? 'block' : 'none';
+        function ir(id) {
+            ['home','privacidad','terminos'].forEach(p => document.getElementById(p).style.display = (p===id?'block':'none'));
             window.scrollTo(0,0);
         }
 
-        function countdown() {
-            const url = document.getElementById('urlInput').value;
-            const btn = document.getElementById('btnAction');
-            const status = document.getElementById('status');
-            const tipo = document.getElementById('formatInput').value;
+        async function start() {
+            const u = document.getElementById('urlIn').value;
+            const t = document.getElementById('fmtIn').value;
+            const b = document.getElementById('btnGo');
+            const s = document.getElementById('status');
 
-            if(!url) return alert("Por favor pega un enlace válido.");
+            if(!u) return alert("Pega un enlace");
 
-            btn.disabled = true;
-            let timer = 5;
+            b.disabled = true;
+            let count = 5;
+            
+            const timer = setInterval(async () => {
+                s.style.color = "#ffaa00";
+                s.innerText = `⏳ Preparando descarga en ${count}...`;
+                count--;
 
-            const interval = setInterval(() => {
-                status.style.color = "#ffcc00";
-                status.innerText = `🔄 Preparando enlace en ${timer} segundos...`;
-                timer--;
-
-                if(timer < 0) {
-                    clearInterval(interval);
-                    processDownload(url, tipo);
+                if(count < 0) {
+                    clearInterval(timer);
+                    s.innerText = "🚀 Conectando con el motor...";
+                    try {
+                        const res = await fetch(`/api/down?url=${encodeURIComponent(u)}&type=${t}`);
+                        const data = await res.json();
+                        if(data.url) {
+                            s.style.color = "#00ff88";
+                            s.innerText = "✅ ¡Listo! Iniciando descarga...";
+                            window.location.href = data.url;
+                        } else {
+                            s.style.color = "#ff4444";
+                            s.innerText = "❌ " + (data.error || "Video no disponible");
+                        }
+                    } catch(e) { s.innerText = "❌ Error de conexión."; }
+                    b.disabled = false;
                 }
             }, 1000);
-        }
-
-        async function processDownload(url, tipo) {
-            const status = document.getElementById('status');
-            const btn = document.getElementById('btnAction');
-            
-            try {
-                const res = await fetch(`/api/get?url=${encodeURIComponent(url)}&tipo=${tipo}`);
-                const data = await res.json();
-
-                if(data.link) {
-                    status.style.color = "#00ff88";
-                    status.innerText = "✅ ¡Enlace listo! Descargando...";
-                    window.location.href = data.link;
-                } else {
-                    status.style.color = "#ff4444";
-                    status.innerText = "❌ Error: " + (data.error || "No disponible");
-                }
-            } catch (e) {
-                status.innerText = "❌ Error de conexión.";
-            } finally {
-                btn.disabled = false;
-            }
         }
     </script>
 </body>
@@ -154,42 +127,41 @@ HTML_PRO = """
 def index():
     return render_template_string(HTML_PRO)
 
-@app.route('/api/get')
-def get_api():
-    u = request.args.get('url')
-    t = request.args.get('tipo', 'mp4')
-    if not u: return jsonify({"error": "No URL"}), 400
-    
-    u = u.split('?')[0].split('&')[0]
+@app.route('/api/down')
+def api_down():
+    url = request.args.get('url')
+    fmt = request.args.get('type', 'mp4')
+    if not url: return jsonify({"error": "No URL"}), 400
+
+    # Usamos la nueva API LITE que encontraste (es más estable)
+    api_url = f"https://download-all-in-one-lite.p.rapidapi.com/autolink"
     headers = {
         "x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585",
-        "x-rapidapi-host": "auto-download-all-in-one.p.rapidapi.com",
-        "Content-Type": "application/json"
+        "x-rapidapi-host": "download-all-in-one-lite.p.rapidapi.com"
     }
 
     try:
-        r = requests.post("https://auto-download-all-in-one.p.rapidapi.com/v1/social/autolink", 
-                          json={"url": u}, headers=headers, timeout=25)
+        # Petición GET con el parámetro url
+        r = requests.get(api_url, params={"url": url}, headers=headers, timeout=25)
         data = r.json()
-        medias = data.get("medias", [])
+        
+        # Esta API suele devolver una lista en 'medias' o 'result'
+        medias = data.get("medias", data.get("result", []))
         
         link = None
-        if isinstance(medias, list):
+        if isinstance(medias, list) and len(medias) > 0:
             for m in medias:
-                if t == 'mp3' and (m.get('type') == 'audio' or 'audio' in m.get('quality', '')):
+                if fmt == 'mp3' and 'audio' in str(m.get('type','')).lower():
                     link = m.get('url'); break
-                if t == 'mp4' and 'video' in m.get('type', ''):
+                if fmt == 'mp4' and 'video' in str(m.get('type','')).lower():
                     link = m.get('url'); break
-            if not link and medias: link = medias[0].get('url')
+            if not link: link = medias[0].get('url')
         elif isinstance(medias, dict):
-            for m in medias.values():
-                if t == 'mp3' and (m.get('type') == 'audio' or 'audio' in m.get('quality', '')):
-                    link = m.get('url'); break
-                if t == 'mp4' and 'video' in m.get('type', ''):
-                    link = m.get('url'); break
-            if not link and medias: link = list(medias.values())[0].get('url')
+            link = list(medias.values())[0].get('url')
 
-        return jsonify({"link": link})
+        if link: return jsonify({"url": link})
+        return jsonify({"error": "No se encontraron enlaces de descarga."}), 404
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
