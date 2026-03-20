@@ -142,7 +142,7 @@ HTML_PREMIUM = """
             b.disabled = false;
         }
 
-        async function generateDownload(url, tipo) {
+       async function generateDownload(url, tipo) {
             const s = document.getElementById('status');
             const err = document.getElementById('errorMessage');
             s.innerText = "🚀 Generando descarga...";
@@ -153,15 +153,31 @@ HTML_PREMIUM = """
                 const data = await res.json();
                 
                 if(data.url) {
-                    // VALIDACIÓN PREVIA DEL LINK PARA EVITAR PÁGINA BLANCA 403
-                    try {
-                        const response = await fetch(data.url, { method: 'HEAD', mode: 'no-cors' });
-                        window.location.href = data.url;
-                        s.innerText = "✅ Descarga iniciada";
-                    } catch (e) {
-                        s.innerText = "";
-                        err.style.display = 'block';
+                    // Intentamos una descarga silenciosa
+                    const a = document.createElement('a');
+                    a.href = data.url;
+                    a.target = "_blank"; // Abrir en pestaña nueva por si acaso
+                    
+                    // Si es YouTube, intentamos forzar el atributo download
+                    if(url.includes('youtu')) {
+                        a.setAttribute('download', 'video_pro.mp4');
                     }
+                    
+                    document.body.appendChild(a);
+                    a.click(); // Intentar descargar
+                    document.body.removeChild(a);
+                    
+                    s.innerText = "✅ Intento de descarga enviado";
+                    
+                    // Si después de 3 segundos el usuario sigue aquí, 
+                    // es probable que YouTube haya bloqueado el link silenciosamente
+                    setTimeout(() => {
+                        if (s.innerText.includes("enviado")) {
+                            s.innerText = "⚠️ Si la descarga no inició, el video está protegido.";
+                            err.style.display = 'block';
+                        }
+                    }, 4000);
+
                 } else {
                     s.innerText = "";
                     err.style.display = 'block';
