@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-# --- DISEÑO PREMIUM CORREGIDO (YT PROTEGIDO / OTROS DIRECTOS) ---
+# --- DISEÑO PREMIUM CON TEXTOS LEGALES PARA ADSENSE ---
 HTML_PREMIUM = """
 <!DOCTYPE html>
 <html lang="es">
@@ -50,6 +50,8 @@ HTML_PREMIUM = """
         #countdownText { font-weight: bold; color: #fff; font-size: 18px; margin-top: 10px; display: block; }
 
         .legal-content { display: none; text-align: left; background: #111; padding: 30px; border-radius: 15px; line-height: 1.6; color: #bbb; margin-top: 20px; border: 1px solid #222; }
+        .legal-content h2 { color: var(--red); border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .ad-slot { margin: 20px auto; min-height: 90px; }
         footer { padding: 40px; color: #444; font-size: 12px; }
     </style>
 </head>
@@ -64,9 +66,14 @@ HTML_PREMIUM = """
 
     <div class="container">
         <div id="home-sec">
+            <div class="ad-slot">
+                <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-8532381032470048" data-ad-slot="5199614767" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+            </div>
+
             <div class="main-card">
                 <h1>🚀 MOTOR DE DESCARGA</h1>
-                <input type="text" id="urlInput" placeholder="Pega el enlace aquí...">
+                <input type="text" id="urlInput" placeholder="Pega el enlace de video aquí...">
                 <div class="options">
                     <select id="formatInput">
                         <option value="mp4">🎬 Video MP4</option>
@@ -78,7 +85,8 @@ HTML_PREMIUM = """
                 
                 <div id="errorMessage">
                     <strong>⚠️ Aviso del Sistema:</strong><br>
-                    Lo sentimos, el servidor no pudo procesar la solicitud para este video en este momento. Intenta con otro video o red social.
+                    Lo sentimos, el servidor no pudo procesar la solicitud para este video de YouTube en este momento. Nuestro equipo técnico trabaja para solucionar el inconveniente.<br><br>
+                    Recuerda que puedes descargar videos de otras plataformas (TikTok, Instagram, Facebook) sin problemas mientras lo solucionamos. ¡Intenta más tarde con este video!
                 </div>
 
                 <div id="previewSection">
@@ -86,14 +94,33 @@ HTML_PREMIUM = """
                     <div id="videoTitle" style="margin-bottom:15px; font-weight:bold; color:#fff;"></div>
                     
                     <div id="supportBox">
-                        ❤️ <strong>¡Gracias por tu apoyo!</strong><br>
-                        Tómate unos segundos para ver nuestra publicidad, esto mantiene el servicio gratuito.
+                        ❤️ <strong>Querido usuario:</strong> Muchas gracias por usar esta herramienta. Por favor, toma unos segundos para visitar las publicidades; esto nos ayuda a mantener los servidores a tu servicio y que tengas una experiencia grata. ¡Muchas gracias!
                         <span id="countdownText">El botón se activará en 5...</span>
                     </div>
 
                     <button id="finalDownloadBtn" disabled>CONFIRMAR DESCARGA</button>
                 </div>
             </div>
+        </div>
+
+        <div id="privacy-sec" class="legal-content">
+            <h2>Política de Privacidad</h2>
+            <p>En <strong>Motor de Descarga Pro</strong>, valoramos tu privacidad. Esta política describe cómo manejamos la información:</p>
+            <ul>
+                <li><strong>Cookies:</strong> Utilizamos cookies para personalizar anuncios y analizar nuestro tráfico. Compartimos información sobre el uso que haces de nuestro sitio con nuestros partners de publicidad y análisis web como Google AdSense.</li>
+                <li><strong>Google AdSense:</strong> Como proveedor externo, Google utiliza cookies para publicar anuncios en este sitio basados en tus visitas anteriores. Puedes inhabilitar el uso de la cookie de publicidad personalizada visitando Preferencias de anuncios de Google.</li>
+                <li><strong>Datos de Usuario:</strong> No almacenamos los videos que descargas ni conservamos registros personales de tus búsquedas. Nuestra herramienta funciona como un puente técnico temporal.</li>
+            </ul>
+        </div>
+
+        <div id="terms-sec" class="legal-content">
+            <h2>Términos y Condiciones</h2>
+            <p>Al utilizar este sitio, aceptas los siguientes términos:</p>
+            <ul>
+                <li><strong>Uso Responsable:</strong> Esta herramienta está diseñada para descargar contenido de uso personal y educativo. El usuario es el único responsable por el respeto a los derechos de autor de los videos descargados.</li>
+                <li><strong>Sin Garantías:</strong> No garantizamos que el servicio sea ininterrumpido. El acceso a ciertas plataformas (como YouTube) puede verse limitado por cambios técnicos ajenos a nuestra voluntad.</li>
+                <li><strong>Limitación de Responsabilidad:</strong> No nos hacemos responsables por el uso indebido del material descargado ni por daños técnicos derivados del uso de la herramienta.</li>
+            </ul>
         </div>
     </div>
 
@@ -102,6 +129,8 @@ HTML_PREMIUM = """
     <script>
         function showSection(sec) {
             document.getElementById('home-sec').style.display = sec === 'home' ? 'block' : 'none';
+            document.getElementById('privacy-sec').style.display = sec === 'privacy' ? 'block' : 'none';
+            document.getElementById('terms-sec').style.display = sec === 'terms' ? 'block' : 'none';
         }
 
         async function processVideo() {
@@ -109,9 +138,9 @@ HTML_PREMIUM = """
             const s = document.getElementById('status');
             const p = document.getElementById('previewSection');
             const err = document.getElementById('errorMessage');
+            const b = document.getElementById('btnAction');
             const box = document.getElementById('supportBox');
             const dBtn = document.getElementById('finalDownloadBtn');
-            const b = document.getElementById('btnAction');
             
             if(!url) return alert("Pega un link");
             
@@ -119,6 +148,7 @@ HTML_PREMIUM = """
             p.style.display = 'none';
             err.style.display = 'none';
             box.style.display = 'none';
+            dBtn.disabled = true;
             s.innerText = "⏳ Analizando enlace...";
 
             try {
@@ -132,7 +162,6 @@ HTML_PREMIUM = """
                     s.innerText = "✅ Detectado";
                     
                     let timeLeft = 5;
-                    dBtn.disabled = true;
                     const countdown = setInterval(() => {
                         timeLeft--;
                         document.getElementById('countdownText').innerText = `El botón se activará en ${timeLeft}...`;
@@ -161,9 +190,7 @@ HTML_PREMIUM = """
                 const data = await res.json();
                 
                 if(data.url) {
-                    // DIFERENCIACIÓN LÓGICA:
                     if(url.includes('youtube.com') || url.includes('youtu.be')) {
-                        // YouTube usa el iframe invisible (escudo)
                         let hiddenIframe = document.getElementById('hiddenDownloader');
                         if (!hiddenIframe) {
                             hiddenIframe = document.createElement('iframe');
@@ -175,7 +202,6 @@ HTML_PREMIUM = """
                         s.innerText = "✅ Intento enviado (YouTube)";
                         setTimeout(() => { if(s.innerText.includes("enviado")) err.style.display = 'block'; }, 4000);
                     } else {
-                        // FACEBOOK, TIKTOK, INSTAGRAM: Abrir directamente (Sin escudo)
                         window.open(data.url, '_blank');
                         s.innerText = "✅ Descarga abierta";
                     }
