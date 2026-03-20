@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-# --- DISEÑO PREMIUM CON MENSAJE DE ERROR AMIGABLE ---
+# --- DISEÑO PREMIUM CON ESCUDO ANTI-ERROR 403 ---
 HTML_PREMIUM = """
 <!DOCTYPE html>
 <html lang="es">
@@ -39,7 +39,6 @@ HTML_PREMIUM = """
         select { padding: 15px; border-radius: 10px; background: #222; color: white; border: 1px solid #444; flex: 1; }
         #btnAction { width: 100%; padding: 18px; background: var(--red); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 18px; cursor: pointer; }
         
-        /* Estilo del Mensaje de Error Personalizado */
         #errorMessage { display: none; background: #2a1010; color: #ff9999; border: 1px solid #ff0000; padding: 20px; border-radius: 15px; margin-top: 20px; line-height: 1.5; text-align: left; }
         
         #previewSection { display: none; margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
@@ -146,15 +145,23 @@ HTML_PREMIUM = """
         async function generateDownload(url, tipo) {
             const s = document.getElementById('status');
             const err = document.getElementById('errorMessage');
-            s.innerText = "🚀 Generando link final...";
+            s.innerText = "🚀 Generando descarga...";
             err.style.display = 'none';
 
             try {
                 const res = await fetch(`/api/down?url=${encodeURIComponent(url)}&type=${tipo}`);
                 const data = await res.json();
+                
                 if(data.url) {
-                    window.location.href = data.url;
-                    s.innerText = "✅ Descarga iniciada";
+                    // VALIDACIÓN PREVIA DEL LINK PARA EVITAR PÁGINA BLANCA 403
+                    try {
+                        const response = await fetch(data.url, { method: 'HEAD', mode: 'no-cors' });
+                        window.location.href = data.url;
+                        s.innerText = "✅ Descarga iniciada";
+                    } catch (e) {
+                        s.innerText = "";
+                        err.style.display = 'block';
+                    }
                 } else {
                     s.innerText = "";
                     err.style.display = 'block';
@@ -169,7 +176,6 @@ HTML_PREMIUM = """
 </html>
 """
 
-# ... (Mantenemos las funciones get_yt_id, api_info y api_down igual que antes)
 def get_yt_id(url):
     pattern = r'(?:v=|\/)([0-9A-Za-z_-]{11}).*'
     match = re.search(pattern, url)
