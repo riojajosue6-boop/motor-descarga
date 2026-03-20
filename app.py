@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-# --- DISEÑO PREMIUM CORREGIDO Y COMPLETO ---
+# --- DISEÑO PREMIUM CORREGIDO (YT PROTEGIDO / OTROS DIRECTOS) ---
 HTML_PREMIUM = """
 <!DOCTYPE html>
 <html lang="es">
@@ -30,58 +30,69 @@ HTML_PREMIUM = """
         body { background: var(--dark); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; text-align: center; }
         nav { background: #000; padding: 15px; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 100; }
         nav a { color: #888; margin: 0 15px; text-decoration: none; font-size: 14px; cursor: pointer; transition: 0.3s; }
+        nav a:hover { color: var(--red); }
         .container { padding: 20px; max-width: 800px; margin: 0 auto; }
         .main-card { background: var(--gray); padding: 40px; border-radius: 25px; border: 1px solid #333; margin: 10px auto; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
         h1 { color: var(--red); font-size: 32px; margin-bottom: 20px; }
         input { width: 100%; padding: 18px; border-radius: 12px; border: 1px solid #333; background: #222; color: #fff; font-size: 16px; box-sizing: border-box; margin-bottom: 20px; outline: none; }
+        .options { display: flex; gap: 10px; margin-bottom: 25px; }
+        select { padding: 15px; border-radius: 10px; background: #222; color: white; border: 1px solid #444; flex: 1; }
         #btnAction { width: 100%; padding: 18px; background: var(--red); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 18px; cursor: pointer; }
         
-        #errorMessage { display: none; background: #2a1010; color: #ff9999; border: 1px solid #ff0000; padding: 20px; border-radius: 15px; margin-top: 20px; text-align: left; }
-        #supportBox { display: none; background: #1a2a1a; color: #99ff99; border: 1px solid #00aa00; padding: 20px; border-radius: 15px; margin: 20px 0; font-size: 14px; }
-        #countdownText { font-weight: bold; color: #fff; font-size: 16px; margin-top: 10px; display: block; }
-
+        #errorMessage { display: none; background: #2a1010; color: #ff9999; border: 1px solid #ff0000; padding: 20px; border-radius: 15px; margin-top: 20px; line-height: 1.5; text-align: left; }
+        
         #previewSection { display: none; margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
         #videoThumbnail { width: 100%; max-width: 400px; border-radius: 15px; border: 1px solid #444; }
         #finalDownloadBtn { width: 100%; padding: 15px; background: #00aa00; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 15px; }
         #finalDownloadBtn:disabled { background: #333; color: #777; cursor: not-allowed; }
-        
+
+        #supportBox { display: none; background: #1a2a1a; color: #99ff99; border: 1px solid #00aa00; padding: 20px; border-radius: 15px; margin: 20px 0; font-size: 14px; line-height: 1.5; }
+        #countdownText { font-weight: bold; color: #fff; font-size: 18px; margin-top: 10px; display: block; }
+
+        .legal-content { display: none; text-align: left; background: #111; padding: 30px; border-radius: 15px; line-height: 1.6; color: #bbb; margin-top: 20px; border: 1px solid #222; }
         footer { padding: 40px; color: #444; font-size: 12px; }
     </style>
 </head>
 <body>
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5P943783" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
-    <nav><a onclick="location.reload()">Inicio</a></nav>
+    <nav>
+        <a onclick="showSection('home')">Inicio</a>
+        <a onclick="showSection('privacy')">Privacidad</a>
+        <a onclick="showSection('terms')">Términos</a>
+    </nav>
 
     <div class="container">
-        <div class="main-card">
-            <h1>🚀 MOTOR DE DESCARGA</h1>
-            <input type="text" id="urlInput" placeholder="Pega el enlace aquí...">
-            <div style="display:flex; gap:10px; margin-bottom:20px;">
-                <select id="formatInput" style="padding:15px; border-radius:10px; background:#222; color:white; border:1px solid #444; flex:1;">
-                    <option value="mp4">🎬 Video MP4</option>
-                    <option value="mp3">🎵 Audio MP3</option>
-                </select>
-            </div>
-            <button id="btnAction" onclick="processVideo()">PROCESAR VIDEO</button>
-            <div id="status" style="margin-top:20px; font-weight:bold;"></div>
-            
-            <div id="errorMessage">
-                <strong>⚠️ Aviso del Sistema:</strong><br>
-                No pudimos procesar este enlace. Esto ocurre por restricciones de la plataforma original. ¡Intenta con otro video o red social!
-            </div>
-
-            <div id="previewSection">
-                <img id="videoThumbnail" src="">
-                <div id="videoTitle" style="margin-bottom:15px; font-weight:bold; color:#fff;"></div>
+        <div id="home-sec">
+            <div class="main-card">
+                <h1>🚀 MOTOR DE DESCARGA</h1>
+                <input type="text" id="urlInput" placeholder="Pega el enlace aquí...">
+                <div class="options">
+                    <select id="formatInput">
+                        <option value="mp4">🎬 Video MP4</option>
+                        <option value="mp3">🎵 Audio MP3</option>
+                    </select>
+                </div>
+                <button id="btnAction" onclick="processVideo()">PROCESAR VIDEO</button>
+                <div id="status" style="margin-top:20px; font-weight:bold;"></div>
                 
-                <div id="supportBox">
-                    ❤️ <strong>¡Gracias por tu apoyo!</strong><br>
-                    Tómate unos segundos para ver nuestra publicidad, esto mantiene el servicio gratuito y a tu servicio. ¡Gracias!
-                    <span id="countdownText">El botón se activará en 5...</span>
+                <div id="errorMessage">
+                    <strong>⚠️ Aviso del Sistema:</strong><br>
+                    Lo sentimos, el servidor no pudo procesar la solicitud para este video en este momento. Intenta con otro video o red social.
                 </div>
 
-                <button id="finalDownloadBtn" disabled>CONFIRMAR DESCARGA</button>
+                <div id="previewSection">
+                    <img id="videoThumbnail" src="">
+                    <div id="videoTitle" style="margin-bottom:15px; font-weight:bold; color:#fff;"></div>
+                    
+                    <div id="supportBox">
+                        ❤️ <strong>¡Gracias por tu apoyo!</strong><br>
+                        Tómate unos segundos para ver nuestra publicidad, esto mantiene el servicio gratuito.
+                        <span id="countdownText">El botón se activará en 5...</span>
+                    </div>
+
+                    <button id="finalDownloadBtn" disabled>CONFIRMAR DESCARGA</button>
+                </div>
             </div>
         </div>
     </div>
@@ -89,6 +100,10 @@ HTML_PREMIUM = """
     <footer>© 2026 Descargador Pro - Cochabamba 🇧🇴</footer>
 
     <script>
+        function showSection(sec) {
+            document.getElementById('home-sec').style.display = sec === 'home' ? 'block' : 'none';
+        }
+
         async function processVideo() {
             const url = document.getElementById('urlInput').value;
             const s = document.getElementById('status');
@@ -96,13 +111,15 @@ HTML_PREMIUM = """
             const err = document.getElementById('errorMessage');
             const box = document.getElementById('supportBox');
             const dBtn = document.getElementById('finalDownloadBtn');
-            const countText = document.getElementById('countdownText');
+            const b = document.getElementById('btnAction');
             
             if(!url) return alert("Pega un link");
             
+            b.disabled = true;
             p.style.display = 'none';
             err.style.display = 'none';
-            s.innerText = "⏳ Analizando...";
+            box.style.display = 'none';
+            s.innerText = "⏳ Analizando enlace...";
 
             try {
                 const res = await fetch('/api/info?url=' + encodeURIComponent(url));
@@ -112,39 +129,56 @@ HTML_PREMIUM = """
                     document.getElementById('videoTitle').innerText = info.title;
                     p.style.display = 'block';
                     box.style.display = 'block';
-                    countText.style.display = 'block';
                     s.innerText = "✅ Detectado";
                     
                     let timeLeft = 5;
                     dBtn.disabled = true;
-                    dBtn.innerText = "ESPERA 5 seg...";
-                    
                     const countdown = setInterval(() => {
                         timeLeft--;
-                        countText.innerText = `El botón se activará en ${timeLeft}...`;
+                        document.getElementById('countdownText').innerText = `El botón se activará en ${timeLeft}...`;
                         if(timeLeft <= 0) {
                             clearInterval(countdown);
-                            countText.style.display = 'none';
+                            document.getElementById('countdownText').style.display = 'none';
                             dBtn.disabled = false;
-                            dBtn.innerText = "DESCARGAR AHORA";
+                            dBtn.innerText = "CONFIRMAR DESCARGA";
                         }
                     }, 1000);
 
                     dBtn.onclick = () => generateDownload(url, document.getElementById('formatInput').value);
                 } else { s.innerText = ""; err.style.display = 'block'; }
             } catch (e) { s.innerText = "❌ Error."; err.style.display = 'block'; }
+            b.disabled = false;
         }
 
         async function generateDownload(url, tipo) {
             const s = document.getElementById('status');
             const err = document.getElementById('errorMessage');
             s.innerText = "🚀 Generando descarga...";
+            err.style.display = 'none';
+
             try {
                 const res = await fetch(`/api/down?url=${encodeURIComponent(url)}&type=${tipo}`);
                 const data = await res.json();
+                
                 if(data.url) {
-                    window.open(data.url, '_blank');
-                    s.innerText = "✅ Descarga abierta";
+                    // DIFERENCIACIÓN LÓGICA:
+                    if(url.includes('youtube.com') || url.includes('youtu.be')) {
+                        // YouTube usa el iframe invisible (escudo)
+                        let hiddenIframe = document.getElementById('hiddenDownloader');
+                        if (!hiddenIframe) {
+                            hiddenIframe = document.createElement('iframe');
+                            hiddenIframe.id = 'hiddenDownloader';
+                            hiddenIframe.style.display = 'none';
+                            document.body.appendChild(hiddenIframe);
+                        }
+                        hiddenIframe.src = data.url;
+                        s.innerText = "✅ Intento enviado (YouTube)";
+                        setTimeout(() => { if(s.innerText.includes("enviado")) err.style.display = 'block'; }, 4000);
+                    } else {
+                        // FACEBOOK, TIKTOK, INSTAGRAM: Abrir directamente (Sin escudo)
+                        window.open(data.url, '_blank');
+                        s.innerText = "✅ Descarga abierta";
+                    }
                 } else { s.innerText = ""; err.style.display = 'block'; }
             } catch (e) { s.innerText = ""; err.style.display = 'block'; }
         }
@@ -170,7 +204,11 @@ def api_info():
         headers = {"x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585", "x-rapidapi-host": "download-all-in-one-lite.p.rapidapi.com"}
         r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", params={"url": url}, headers=headers, timeout=15)
         data = r.json()
-        return jsonify({"success": True, "title": data.get("title", "Video"), "thumbnail": data.get("thumbnail")})
+        thumb = data.get("thumbnail")
+        if not thumb and ("youtube.com" in url or "youtu.be" in url):
+            yid = get_yt_id(url)
+            thumb = f"https://img.youtube.com/vi/{yid}/hqdefault.jpg"
+        return jsonify({"success": True, "title": data.get("title", "Video"), "thumbnail": thumb})
     except: return jsonify({"success": False})
 
 @app.route('/api/down')
@@ -185,10 +223,12 @@ def api_down():
             r = requests.get("https://yt-api.p.rapidapi.com/dl", params={"id": yid}, headers=headers, timeout=20)
             data = r.json()
             link = None
-            formats = data.get('adaptiveFormats', []) if fmt == 'mp3' else data.get('formats', [])
-            for f in formats:
-                if fmt == 'mp3' and 'audio' in f.get('mimeType', ''): link = f.get('url'); break
-                if fmt == 'mp4' and 'video' in f.get('mimeType', ''): link = f.get('url'); break
+            if fmt == 'mp3':
+                for f in data.get('adaptiveFormats', []):
+                    if 'audio' in f.get('mimeType', ''): link = f.get('url'); break
+            if not link:
+                for f in data.get('formats', []):
+                    if 'video' in f.get('mimeType', ''): link = f.get('url'); break
             return jsonify({"url": link or data.get('link')})
         else:
             headers["x-rapidapi-host"] = "download-all-in-one-lite.p.rapidapi.com"
@@ -196,10 +236,11 @@ def api_down():
             data = r.json()
             medias = data.get("medias", [])
             target = None
-            for m in medias:
-                if fmt == 'mp3' and 'audio' in str(m.get('type')).lower(): target = m.get('url'); break
-                if fmt == 'mp4' and 'video' in str(m.get('type')).lower(): target = m.get('url'); break
-            if not target and medias: target = medias[0].get('url')
+            if medias:
+                for m in medias:
+                    if fmt == 'mp3' and 'audio' in str(m.get('type')).lower(): target = m.get('url'); break
+                    if fmt == 'mp4' and 'video' in str(m.get('type')).lower(): target = m.get('url'); break
+                if not target: target = medias[0].get('url')
             return jsonify({"url": target})
     except: return jsonify({"error": "Error"}), 500
 
