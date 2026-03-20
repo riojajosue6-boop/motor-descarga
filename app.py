@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-# --- DISEÑO PREMIUM CON ESCUDO ANTI-ERROR 403 ---
+# --- DISEÑO PREMIUM CON CONTADOR DE APOYO ---
 HTML_PREMIUM = """
 <!DOCTYPE html>
 <html lang="es">
@@ -41,10 +41,15 @@ HTML_PREMIUM = """
         
         #errorMessage { display: none; background: #2a1010; color: #ff9999; border: 1px solid #ff0000; padding: 20px; border-radius: 15px; margin-top: 20px; line-height: 1.5; text-align: left; }
         
+        /* ESTILO MENSAJE DE APOYO */
+        #supportBox { display: none; background: #1a2a1a; color: #99ff99; border: 1px solid #00aa00; padding: 20px; border-radius: 15px; margin: 20px 0; font-size: 14px; line-height: 1.5; }
+        #countdownText { font-weight: bold; color: #fff; font-size: 18px; margin-top: 10px; display: block; }
+
         #previewSection { display: none; margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
         #videoThumbnail { width: 100%; max-width: 400px; border-radius: 15px; border: 1px solid #444; }
         #finalDownloadBtn { width: 100%; padding: 15px; background: #00aa00; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 15px; }
-        .legal-content { display: none; text-align: left; background: #111; padding: 30px; border-radius: 15px; line-height: 1.6; color: #bbb; margin-top: 20px; border: 1px solid #222; }
+        #finalDownloadBtn:disabled { background: #333; color: #777; cursor: not-allowed; }
+        
         .ad-slot { margin: 20px auto; min-height: 90px; }
         footer { padding: 40px; color: #444; font-size: 12px; }
     </style>
@@ -86,7 +91,13 @@ HTML_PREMIUM = """
                 <div id="previewSection">
                     <img id="videoThumbnail" src="">
                     <div id="videoTitle" style="margin-bottom:15px; font-weight:bold; color:#fff;"></div>
-                    <button id="finalDownloadBtn">CONFIRMAR DESCARGA</button>
+                    
+                    <div id="supportBox">
+                        ❤️ <strong>Querido usuario:</strong> Muchas gracias por usar esta herramienta. Por favor, toma unos segundos para visitar las publicidades; esto nos ayuda a mantener los servidores a tu servicio y que tengas una experiencia grata. ¡Muchas gracias!
+                        <span id="countdownText">El botón se activará en 5...</span>
+                    </div>
+
+                    <button id="finalDownloadBtn" disabled>CONFIRMAR DESCARGA</button>
                 </div>
             </div>
             
@@ -114,13 +125,17 @@ HTML_PREMIUM = """
             const s = document.getElementById('status');
             const p = document.getElementById('previewSection');
             const err = document.getElementById('errorMessage');
+            const box = document.getElementById('supportBox');
             const b = document.getElementById('btnAction');
+            const dBtn = document.getElementById('finalDownloadBtn');
             
             if(!url) return alert("Pega un link");
             
             b.disabled = true;
             p.style.display = 'none';
             err.style.display = 'none';
+            box.style.display = 'none';
+            dBtn.disabled = true;
             s.innerText = "⏳ Analizando enlace...";
 
             try {
@@ -130,8 +145,23 @@ HTML_PREMIUM = """
                     document.getElementById('videoThumbnail').src = info.thumbnail;
                     document.getElementById('videoTitle').innerText = info.title;
                     p.style.display = 'block';
-                    s.innerText = "✅ Listo para procesar";
-                    document.getElementById('finalDownloadBtn').onclick = () => generateDownload(url, document.getElementById('formatInput').value);
+                    box.style.display = 'block';
+                    s.innerText = "✅ Video detectado";
+                    
+                    // INICIAR CONTADOR
+                    let timeLeft = 5;
+                    const countdown = setInterval(() => {
+                        timeLeft--;
+                        document.getElementById('countdownText').innerText = `El botón se activará en ${timeLeft}...`;
+                        if(timeLeft <= 0) {
+                            clearInterval(countdown);
+                            document.getElementById('countdownText').style.display = 'none';
+                            dBtn.disabled = false;
+                            dBtn.innerText = "¡LISTO PARA DESCARGAR!";
+                        }
+                    }, 1000);
+
+                    dBtn.onclick = () => generateDownload(url, document.getElementById('formatInput').value);
                 } else {
                     s.innerText = "";
                     err.style.display = 'block';
@@ -142,7 +172,7 @@ HTML_PREMIUM = """
             b.disabled = false;
         }
 
-      async function generateDownload(url, tipo) {
+        async function generateDownload(url, tipo) {
             const s = document.getElementById('status');
             const err = document.getElementById('errorMessage');
             s.innerText = "🚀 Generando descarga...";
@@ -153,7 +183,6 @@ HTML_PREMIUM = """
                 const data = await res.json();
                 
                 if(data.url) {
-                    // Creamos un iframe invisible para intentar la descarga sin recargar la página
                     let hiddenIframe = document.getElementById('hiddenDownloader');
                     if (!hiddenIframe) {
                         hiddenIframe = document.createElement('iframe');
@@ -161,17 +190,14 @@ HTML_PREMIUM = """
                         hiddenIframe.style.display = 'none';
                         document.body.appendChild(hiddenIframe);
                     }
-                    
-                    // Intentamos cargar el link en el iframe invisible
                     hiddenIframe.src = data.url;
                     s.innerText = "✅ Intento de descarga enviado";
-
-                    // Mostramos el mensaje preventivo por si YouTube bloquea el iframe
                     setTimeout(() => {
-                        err.style.display = 'block';
-                        s.innerText = "⚠️ Si la descarga no inició, el video está protegido.";
-                    }, 2000);
-
+                        if (s.innerText.includes("enviado")) {
+                            err.style.display = 'block';
+                            s.innerText = "";
+                        }
+                    }, 4000);
                 } else {
                     s.innerText = "";
                     err.style.display = 'block';
@@ -186,6 +212,7 @@ HTML_PREMIUM = """
 </html>
 """
 
+# ... (El resto de las funciones de Python se mantienen igual)
 def get_yt_id(url):
     pattern = r'(?:v=|\/)([0-9A-Za-z_-]{11}).*'
     match = re.search(pattern, url)
