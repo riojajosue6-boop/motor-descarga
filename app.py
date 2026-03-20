@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-# --- DISEÑO PREMIUM CORREGIDO ---
+# --- DISEÑO PREMIUM CORREGIDO Y COMPLETO ---
 HTML_PREMIUM = """
 <!DOCTYPE html>
 <html lang="es">
@@ -49,6 +49,8 @@ HTML_PREMIUM = """
     </style>
 </head>
 <body>
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5P943783" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
     <nav><a onclick="location.reload()">Inicio</a></nav>
 
     <div class="container">
@@ -66,7 +68,7 @@ HTML_PREMIUM = """
             
             <div id="errorMessage">
                 <strong>⚠️ Aviso del Sistema:</strong><br>
-                No pudimos procesar este enlace específico. Esto ocurre a veces por restricciones de la plataforma original. ¡Intenta con otro video!
+                No pudimos procesar este enlace. Esto ocurre por restricciones de la plataforma original. ¡Intenta con otro video o red social!
             </div>
 
             <div id="previewSection">
@@ -75,7 +77,7 @@ HTML_PREMIUM = """
                 
                 <div id="supportBox">
                     ❤️ <strong>¡Gracias por tu apoyo!</strong><br>
-                    Tómate unos segundos para ver nuestra publicidad, esto mantiene el servicio gratuito.
+                    Tómate unos segundos para ver nuestra publicidad, esto mantiene el servicio gratuito y a tu servicio. ¡Gracias!
                     <span id="countdownText">El botón se activará en 5...</span>
                 </div>
 
@@ -87,8 +89,6 @@ HTML_PREMIUM = """
     <footer>© 2026 Descargador Pro - Cochabamba 🇧🇴</footer>
 
     <script>
-        let globalUrl = "";
-
         async function processVideo() {
             const url = document.getElementById('urlInput').value;
             const s = document.getElementById('status');
@@ -96,9 +96,9 @@ HTML_PREMIUM = """
             const err = document.getElementById('errorMessage');
             const box = document.getElementById('supportBox');
             const dBtn = document.getElementById('finalDownloadBtn');
+            const countText = document.getElementById('countdownText');
             
             if(!url) return alert("Pega un link");
-            globalUrl = url;
             
             p.style.display = 'none';
             err.style.display = 'none';
@@ -112,6 +112,7 @@ HTML_PREMIUM = """
                     document.getElementById('videoTitle').innerText = info.title;
                     p.style.display = 'block';
                     box.style.display = 'block';
+                    countText.style.display = 'block';
                     s.innerText = "✅ Detectado";
                     
                     let timeLeft = 5;
@@ -120,10 +121,10 @@ HTML_PREMIUM = """
                     
                     const countdown = setInterval(() => {
                         timeLeft--;
-                        document.getElementById('countdownText').innerText = `El botón se activará en ${timeLeft}...`;
+                        countText.innerText = `El botón se activará en ${timeLeft}...`;
                         if(timeLeft <= 0) {
                             clearInterval(countdown);
-                            document.getElementById('countdownText').style.display = 'none';
+                            countText.style.display = 'none';
                             dBtn.disabled = false;
                             dBtn.innerText = "DESCARGAR AHORA";
                         }
@@ -142,13 +143,65 @@ HTML_PREMIUM = """
                 const res = await fetch(`/api/down?url=${encodeURIComponent(url)}&type=${tipo}`);
                 const data = await res.json();
                 if(data.url) {
-                    // REDIRECCIÓN DIRECTA PARA FB/IG/TK/YT
-                    // Esto evita el Error 403 por validación JS
                     window.open(data.url, '_blank');
-                    s.innerText = "✅ Descarga abierta en pestaña nueva";
+                    s.innerText = "✅ Descarga abierta";
                 } else { s.innerText = ""; err.style.display = 'block'; }
             } catch (e) { s.innerText = ""; err.style.display = 'block'; }
         }
     </script>
 </body>
 </html>
+"""
+
+def get_yt_id(url):
+    pattern = r'(?:v=|\/)([0-9A-Za-z_-]{11}).*'
+    match = re.search(pattern, url)
+    return match.group(1) if match else None
+
+@app.route('/')
+def index():
+    return render_template_string(HTML_PREMIUM)
+
+@app.route('/api/info')
+def api_info():
+    url = request.args.get('url')
+    if not url: return jsonify({"success": False})
+    try:
+        headers = {"x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585", "x-rapidapi-host": "download-all-in-one-lite.p.rapidapi.com"}
+        r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", params={"url": url}, headers=headers, timeout=15)
+        data = r.json()
+        return jsonify({"success": True, "title": data.get("title", "Video"), "thumbnail": data.get("thumbnail")})
+    except: return jsonify({"success": False})
+
+@app.route('/api/down')
+def api_down():
+    url = request.args.get('url')
+    fmt = request.args.get('type', 'mp4')
+    headers = {"x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585"}
+    try:
+        if "youtube.com" in url or "youtu.be" in url:
+            yid = get_yt_id(url)
+            headers["x-rapidapi-host"] = "yt-api.p.rapidapi.com"
+            r = requests.get("https://yt-api.p.rapidapi.com/dl", params={"id": yid}, headers=headers, timeout=20)
+            data = r.json()
+            link = None
+            formats = data.get('adaptiveFormats', []) if fmt == 'mp3' else data.get('formats', [])
+            for f in formats:
+                if fmt == 'mp3' and 'audio' in f.get('mimeType', ''): link = f.get('url'); break
+                if fmt == 'mp4' and 'video' in f.get('mimeType', ''): link = f.get('url'); break
+            return jsonify({"url": link or data.get('link')})
+        else:
+            headers["x-rapidapi-host"] = "download-all-in-one-lite.p.rapidapi.com"
+            r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", params={"url": url}, headers=headers, timeout=20)
+            data = r.json()
+            medias = data.get("medias", [])
+            target = None
+            for m in medias:
+                if fmt == 'mp3' and 'audio' in str(m.get('type')).lower(): target = m.get('url'); break
+                if fmt == 'mp4' and 'video' in str(m.get('type')).lower(): target = m.get('url'); break
+            if not target and medias: target = medias[0].get('url')
+            return jsonify({"url": target})
+    except: return jsonify({"error": "Error"}), 500
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
