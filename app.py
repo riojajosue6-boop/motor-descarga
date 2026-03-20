@@ -142,7 +142,7 @@ HTML_PREMIUM = """
             b.disabled = false;
         }
 
-       async function generateDownload(url, tipo) {
+      async function generateDownload(url, tipo) {
             const s = document.getElementById('status');
             const err = document.getElementById('errorMessage');
             s.innerText = "🚀 Generando descarga...";
@@ -153,30 +153,24 @@ HTML_PREMIUM = """
                 const data = await res.json();
                 
                 if(data.url) {
-                    // Intentamos una descarga silenciosa
-                    const a = document.createElement('a');
-                    a.href = data.url;
-                    a.target = "_blank"; // Abrir en pestaña nueva por si acaso
-                    
-                    // Si es YouTube, intentamos forzar el atributo download
-                    if(url.includes('youtu')) {
-                        a.setAttribute('download', 'video_pro.mp4');
+                    // Creamos un iframe invisible para intentar la descarga sin recargar la página
+                    let hiddenIframe = document.getElementById('hiddenDownloader');
+                    if (!hiddenIframe) {
+                        hiddenIframe = document.createElement('iframe');
+                        hiddenIframe.id = 'hiddenDownloader';
+                        hiddenIframe.style.display = 'none';
+                        document.body.appendChild(hiddenIframe);
                     }
                     
-                    document.body.appendChild(a);
-                    a.click(); // Intentar descargar
-                    document.body.removeChild(a);
-                    
+                    // Intentamos cargar el link en el iframe invisible
+                    hiddenIframe.src = data.url;
                     s.innerText = "✅ Intento de descarga enviado";
-                    
-                    // Si después de 3 segundos el usuario sigue aquí, 
-                    // es probable que YouTube haya bloqueado el link silenciosamente
+
+                    // Mostramos el mensaje preventivo por si YouTube bloquea el iframe
                     setTimeout(() => {
-                        if (s.innerText.includes("enviado")) {
-                            s.innerText = "⚠️ Si la descarga no inició, el video está protegido.";
-                            err.style.display = 'block';
-                        }
-                    }, 4000);
+                        err.style.display = 'block';
+                        s.innerText = "⚠️ Si la descarga no inició, el video está protegido.";
+                    }, 2000);
 
                 } else {
                     s.innerText = "";
