@@ -270,5 +270,15 @@ def api_down():
             return jsonify({"url": target})
     except: return jsonify({"error": "Error"}), 500
 
+# --- RUTA PARA QUE GOOGLE ENCUENTRE EL ARCHIVO ADS.TXT ---
+@app.route('/ads.txt')
+def ads_txt():
+    try:
+        with open('ads.txt', 'r') as f:
+            content = f.read()
+        return content, 200, {'Content-Type': 'text/plain'}
+    except:
+        return "google.com, pub-8532381032470048, DIRECT, f08c47fec0942fa0", 200, {'Content-Type': 'text/plain'}
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
