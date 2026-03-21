@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-# --- DISEÑO PREMIUM CON BOTÓN LIMPIAR Y DESCARGA MEJORADA ---
+# --- DISEÑO PREMIUM CON TEXTOS LEGALES ORIGINALES RESTAURADOS ---
 HTML_PREMIUM = """
 <!DOCTYPE html>
 <html lang="es">
@@ -86,27 +86,40 @@ HTML_PREMIUM = """
                 
                 <div id="errorMessage">
                     <strong>⚠️ Aviso del Sistema:</strong><br>
-                    Lo sentimos, el servidor no pudo procesar la solicitud para este video en este momento. Nuestro equipo técnico trabaja para solucionar el inconveniente.
+                    Lo sentimos, el servidor no pudo procesar la solicitud para este video de YouTube en este momento. Nuestro equipo técnico trabaja para solucionar el inconveniente.<br><br>
+                    Recuerda que puedes descargar videos de otras plataformas (TikTok, Instagram, Facebook) sin problemas mientras lo solucionamos. ¡Intenta más tarde con este video!
                 </div>
 
                 <div id="previewSection">
                     <img id="videoThumbnail" src="">
                     <div id="videoTitle" style="margin-bottom:15px; font-weight:bold; color:#fff;"></div>
                     <div id="supportBox">
-                        ❤️ <strong>Querido usuario:</strong> Muchas gracias por usar esta herramienta. Por favor, toma unos segundos para visitar las publicidades; esto nos ayuda a mantener los servidores a tu servicio. ¡Muchas gracias!
+                        ❤️ <strong>Querido usuario:</strong> Muchas gracias por usar esta herramienta. Por favor, toma unos segundos para visitar las publicidades; esto nos ayuda a mantener los servidores a tu servicio y que tengas una experiencia grata. ¡Muchas gracias!
                         <span id="countdownText">El botón se activará en 5...</span>
                     </div>
                     <button id="finalDownloadBtn" disabled>CONFIRMAR DESCARGA</button>
                 </div>
             </div>
         </div>
+
         <div id="privacy-sec" class="legal-content">
             <h2>Política de Privacidad</h2>
-            <p>En <strong>Motor de Descarga Pro</strong>, valoramos tu privacidad...</p>
+            <p>En <strong>Motor de Descarga Pro</strong>, valoramos tu privacidad. Esta política describe cómo manejamos la información:</p>
+            <ul>
+                <li><strong>Cookies:</strong> Utilizamos cookies para personalizar anuncios y analizar nuestro tráfico. Compartimos información sobre el uso que haces de nuestro sitio con nuestros partners de publicidad y análisis web como Google AdSense.</li>
+                <li><strong>Google AdSense:</strong> Como proveedor externo, Google utiliza cookies para publicar anuncios en este sitio basados en tus visitas anteriores. Puedes inhabilitar el uso de la cookie de publicidad personalizada visitando Preferencias de anuncios de Google.</li>
+                <li><strong>Datos de Usuario:</strong> No almacenamos los videos que descargas ni conservamos registros personales de tus búsquedas. Nuestra herramienta funciona como un puente técnico temporal.</li>
+            </ul>
         </div>
+
         <div id="terms-sec" class="legal-content">
             <h2>Términos y Condiciones</h2>
-            <p>Al utilizar este sitio, aceptas los siguientes términos...</p>
+            <p>Al utilizar este sitio, aceptas los siguientes términos:</p>
+            <ul>
+                <li><strong>Uso Responsable:</strong> Esta herramienta está diseñada para descargar contenido de uso personal y educativo. El usuario es el único responsable por el respeto a los derechos de autor de los videos descargados.</li>
+                <li><strong>Sin Garantías:</strong> No garantizamos que el servicio sea ininterrumpido. El acceso a ciertas plataformas (como YouTube) puede verse limitado por cambios técnicos ajenos a nuestra voluntad.</li>
+                <li><strong>Limitación de Responsabilidad:</strong> No nos hacemos responsables por el uso indebido del material descargado ni por daños técnicos derivados del uso de la herramienta.</li>
+            </ul>
         </div>
     </div>
 
@@ -170,11 +183,9 @@ HTML_PREMIUM = """
                 const res = await fetch(`/api/down?url=${encodeURIComponent(url)}&type=${tipo}`);
                 const data = await res.json();
                 if(data.url) {
-                    // SOLUCIÓN DESCARGA FORZADA:
                     const a = document.createElement('a');
                     a.href = data.url;
                     a.target = "_blank";
-                    // Forzamos atributo download para evitar que abra la web de origen
                     a.setAttribute('download', 'video_pro.mp4'); 
                     document.body.appendChild(a);
                     a.click();
@@ -192,7 +203,6 @@ HTML_PREMIUM = """
 </html>
 """
 
-# ... (El resto del código Python: get_yt_id, api_info, api_down, ads_txt se mantienen exactamente iguales)
 def get_yt_id(url):
     pattern = r'(?:v=|\/)([0-9A-Za-z_-]{11}).*'
     match = re.search(pattern, url)
