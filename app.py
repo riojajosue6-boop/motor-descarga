@@ -13,6 +13,13 @@ HTML_PREMIUM = """
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <meta name="description" content="El mejor descargador de videos en Bolivia. Descarga videos de TikTok sin marca de agua, Facebook, Instagram y YouTube en MP4 o MP3 gratis y rápido.">
+    <meta name="keywords" content="descargar videos bolivia, tiktok sin marca de agua bolivia, descargar mp3 youtube bolivia, motor de descarga pro">
+    <meta name="author" content="Motor de Descarga Pro">
+    <meta property="og:title" content="🚀 Motor de Descarga Pro | Descarga Videos Gratis en Bolivia">
+    <meta property="og:description" content="Baja videos de tus redes favoritas fácil y rápido. ¡Hecho en Bolivia para el mundo!">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://motor-descarga.onrender.com/">
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
     j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
@@ -21,7 +28,7 @@ HTML_PREMIUM = """
     
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motor de Descarga Pro | Bolivia</title>
+    <title>🚀 Descargar Videos Online Gratis | TikTok, FB, IG, YT | Bolivia Pro</title>
     
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8532381032470048" crossorigin="anonymous"></script>
 
@@ -131,7 +138,10 @@ HTML_PREMIUM = """
             </ul>
         </div>
     </div>
-
+    <div style="max-width:800px; margin:40px auto; padding:20px; color:#888; font-size:14px; text-align:left; line-height:1.6; border-top: 1px solid #222;">
+        <h3>¿Cómo descargar videos en Bolivia con nuestra herramienta?</h3>
+        <p>Nuestro <strong>Motor de Descarga Pro</strong> es la solución más rápida en Bolivia para obtener tus videos favoritos. Si buscas <strong>descargar videos de TikTok sin marca de agua</strong> o convertir música de YouTube a <strong>MP3 de alta calidad</strong>, estás en el lugar correcto. Solo pega el link, espera 5 segundos y disfruta de tu contenido en cualquier dispositivo.</p>
+    </div>
     <footer>© 2026 Descargador Pro - Cochabamba 🇧🇴</footer>
 
     <script>
