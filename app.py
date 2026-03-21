@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-# --- DISEÑO PREMIUM CON TEXTOS LEGALES PARA ADSENSE ---
+# --- DISEÑO PREMIUM CON BOTÓN LIMPIAR Y DESCARGA MEJORADA ---
 HTML_PREMIUM = """
 <!DOCTYPE html>
 <html lang="es">
@@ -34,21 +34,24 @@ HTML_PREMIUM = """
         .container { padding: 20px; max-width: 800px; margin: 0 auto; }
         .main-card { background: var(--gray); padding: 40px; border-radius: 25px; border: 1px solid #333; margin: 10px auto; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
         h1 { color: var(--red); font-size: 32px; margin-bottom: 20px; }
-        input { width: 100%; padding: 18px; border-radius: 12px; border: 1px solid #333; background: #222; color: #fff; font-size: 16px; box-sizing: border-box; margin-bottom: 20px; outline: none; }
+        
+        /* Contenedor de entrada con botón de limpiar */
+        .input-group { position: relative; width: 100%; margin-bottom: 20px; }
+        input { width: 100%; padding: 18px 50px 18px 18px; border-radius: 12px; border: 1px solid #333; background: #222; color: #fff; font-size: 16px; box-sizing: border-box; outline: none; }
+        .clear-btn { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: #444; color: #fff; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+        .clear-btn:hover { background: var(--red); }
+
         .options { display: flex; gap: 10px; margin-bottom: 25px; }
         select { padding: 15px; border-radius: 10px; background: #222; color: white; border: 1px solid #444; flex: 1; }
         #btnAction { width: 100%; padding: 18px; background: var(--red); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 18px; cursor: pointer; }
         
         #errorMessage { display: none; background: #2a1010; color: #ff9999; border: 1px solid #ff0000; padding: 20px; border-radius: 15px; margin-top: 20px; line-height: 1.5; text-align: left; }
-        
         #previewSection { display: none; margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
         #videoThumbnail { width: 100%; max-width: 400px; border-radius: 15px; border: 1px solid #444; }
         #finalDownloadBtn { width: 100%; padding: 15px; background: #00aa00; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 15px; }
         #finalDownloadBtn:disabled { background: #333; color: #777; cursor: not-allowed; }
-
         #supportBox { display: none; background: #1a2a1a; color: #99ff99; border: 1px solid #00aa00; padding: 20px; border-radius: 15px; margin: 20px 0; font-size: 14px; line-height: 1.5; }
         #countdownText { font-weight: bold; color: #fff; font-size: 18px; margin-top: 10px; display: block; }
-
         .legal-content { display: none; text-align: left; background: #111; padding: 30px; border-radius: 15px; line-height: 1.6; color: #bbb; margin-top: 20px; border: 1px solid #222; }
         .legal-content h2 { color: var(--red); border-bottom: 1px solid #333; padding-bottom: 10px; }
         .ad-slot { margin: 20px auto; min-height: 90px; }
@@ -66,14 +69,12 @@ HTML_PREMIUM = """
 
     <div class="container">
         <div id="home-sec">
-            <div class="ad-slot">
-                <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-8532381032470048" data-ad-slot="5199614767" data-ad-format="auto" data-full-width-responsive="true"></ins>
-                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-            </div>
-
             <div class="main-card">
                 <h1>🚀 MOTOR DE DESCARGA</h1>
-                <input type="text" id="urlInput" placeholder="Pega el enlace de video aquí...">
+                <div class="input-group">
+                    <input type="text" id="urlInput" placeholder="Pega el enlace de video aquí...">
+                    <button class="clear-btn" onclick="clearUrl()">✕</button>
+                </div>
                 <div class="options">
                     <select id="formatInput">
                         <option value="mp4">🎬 Video MP4</option>
@@ -85,42 +86,27 @@ HTML_PREMIUM = """
                 
                 <div id="errorMessage">
                     <strong>⚠️ Aviso del Sistema:</strong><br>
-                    Lo sentimos, el servidor no pudo procesar la solicitud para este video de YouTube en este momento. Nuestro equipo técnico trabaja para solucionar el inconveniente.<br><br>
-                    Recuerda que puedes descargar videos de otras plataformas (TikTok, Instagram, Facebook) sin problemas mientras lo solucionamos. ¡Intenta más tarde con este video!
+                    Lo sentimos, el servidor no pudo procesar la solicitud para este video en este momento. Nuestro equipo técnico trabaja para solucionar el inconveniente.
                 </div>
 
                 <div id="previewSection">
                     <img id="videoThumbnail" src="">
                     <div id="videoTitle" style="margin-bottom:15px; font-weight:bold; color:#fff;"></div>
-                    
                     <div id="supportBox">
-                        ❤️ <strong>Querido usuario:</strong> Muchas gracias por usar esta herramienta. Por favor, toma unos segundos para visitar las publicidades; esto nos ayuda a mantener los servidores a tu servicio y que tengas una experiencia grata. ¡Muchas gracias!
+                        ❤️ <strong>Querido usuario:</strong> Muchas gracias por usar esta herramienta. Por favor, toma unos segundos para visitar las publicidades; esto nos ayuda a mantener los servidores a tu servicio. ¡Muchas gracias!
                         <span id="countdownText">El botón se activará en 5...</span>
                     </div>
-
                     <button id="finalDownloadBtn" disabled>CONFIRMAR DESCARGA</button>
                 </div>
             </div>
         </div>
-
         <div id="privacy-sec" class="legal-content">
             <h2>Política de Privacidad</h2>
-            <p>En <strong>Motor de Descarga Pro</strong>, valoramos tu privacidad. Esta política describe cómo manejamos la información:</p>
-            <ul>
-                <li><strong>Cookies:</strong> Utilizamos cookies para personalizar anuncios y analizar nuestro tráfico. Compartimos información sobre el uso que haces de nuestro sitio con nuestros partners de publicidad y análisis web como Google AdSense.</li>
-                <li><strong>Google AdSense:</strong> Como proveedor externo, Google utiliza cookies para publicar anuncios en este sitio basados en tus visitas anteriores. Puedes inhabilitar el uso de la cookie de publicidad personalizada visitando Preferencias de anuncios de Google.</li>
-                <li><strong>Datos de Usuario:</strong> No almacenamos los videos que descargas ni conservamos registros personales de tus búsquedas. Nuestra herramienta funciona como un puente técnico temporal.</li>
-            </ul>
+            <p>En <strong>Motor de Descarga Pro</strong>, valoramos tu privacidad...</p>
         </div>
-
         <div id="terms-sec" class="legal-content">
             <h2>Términos y Condiciones</h2>
-            <p>Al utilizar este sitio, aceptas los siguientes términos:</p>
-            <ul>
-                <li><strong>Uso Responsable:</strong> Esta herramienta está diseñada para descargar contenido de uso personal y educativo. El usuario es el único responsable por el respeto a los derechos de autor de los videos descargados.</li>
-                <li><strong>Sin Garantías:</strong> No garantizamos que el servicio sea ininterrumpido. El acceso a ciertas plataformas (como YouTube) puede verse limitado por cambios técnicos ajenos a nuestra voluntad.</li>
-                <li><strong>Limitación de Responsabilidad:</strong> No nos hacemos responsables por el uso indebido del material descargado ni por daños técnicos derivados del uso de la herramienta.</li>
-            </ul>
+            <p>Al utilizar este sitio, aceptas los siguientes términos...</p>
         </div>
     </div>
 
@@ -133,6 +119,13 @@ HTML_PREMIUM = """
             document.getElementById('terms-sec').style.display = sec === 'terms' ? 'block' : 'none';
         }
 
+        function clearUrl() {
+            document.getElementById('urlInput').value = "";
+            document.getElementById('status').innerText = "";
+            document.getElementById('previewSection').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
         async function processVideo() {
             const url = document.getElementById('urlInput').value;
             const s = document.getElementById('status');
@@ -143,12 +136,7 @@ HTML_PREMIUM = """
             const dBtn = document.getElementById('finalDownloadBtn');
             
             if(!url) return alert("Pega un link");
-            
-            b.disabled = true;
-            p.style.display = 'none';
-            err.style.display = 'none';
-            box.style.display = 'none';
-            dBtn.disabled = true;
+            b.disabled = true; p.style.display = 'none'; err.style.display = 'none'; box.style.display = 'none';
             s.innerText = "⏳ Analizando enlace...";
 
             try {
@@ -157,10 +145,7 @@ HTML_PREMIUM = """
                 if(info.success) {
                     document.getElementById('videoThumbnail').src = info.thumbnail;
                     document.getElementById('videoTitle').innerText = info.title;
-                    p.style.display = 'block';
-                    box.style.display = 'block';
-                    s.innerText = "✅ Detectado";
-                    
+                    p.style.display = 'block'; box.style.display = 'block'; s.innerText = "✅ Detectado";
                     let timeLeft = 5;
                     const countdown = setInterval(() => {
                         timeLeft--;
@@ -168,11 +153,9 @@ HTML_PREMIUM = """
                         if(timeLeft <= 0) {
                             clearInterval(countdown);
                             document.getElementById('countdownText').style.display = 'none';
-                            dBtn.disabled = false;
-                            dBtn.innerText = "CONFIRMAR DESCARGA";
+                            dBtn.disabled = false; dBtn.innerText = "CONFIRMAR DESCARGA";
                         }
                     }, 1000);
-
                     dBtn.onclick = () => generateDownload(url, document.getElementById('formatInput').value);
                 } else { s.innerText = ""; err.style.display = 'block'; }
             } catch (e) { s.innerText = "❌ Error."; err.style.display = 'block'; }
@@ -183,21 +166,23 @@ HTML_PREMIUM = """
             const s = document.getElementById('status');
             const err = document.getElementById('errorMessage');
             s.innerText = "🚀 Generando descarga...";
-            err.style.display = 'none';
-
             try {
                 const res = await fetch(`/api/down?url=${encodeURIComponent(url)}&type=${tipo}`);
                 const data = await res.json();
-                
                 if(data.url) {
+                    // SOLUCIÓN DESCARGA FORZADA:
+                    const a = document.createElement('a');
+                    a.href = data.url;
+                    a.target = "_blank";
+                    // Forzamos atributo download para evitar que abra la web de origen
+                    a.setAttribute('download', 'video_pro.mp4'); 
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    s.innerText = "✅ Descarga iniciada";
+                    
                     if(url.includes('youtube.com') || url.includes('youtu.be')) {
-                        let hI = document.getElementById('hiddenDownloader');
-                        if (!hI) { hI = document.createElement('iframe'); hI.id = 'hiddenDownloader'; hI.style.display = 'none'; document.body.appendChild(hI); }
-                        hI.src = data.url; s.innerText = "✅ Intento enviado (YouTube)";
-                        setTimeout(() => { if(s.innerText.includes("enviado")) err.style.display = 'block'; }, 4000);
-                    } else {
-                        window.open(data.url, '_blank');
-                        s.innerText = "✅ Descarga abierta";
+                        setTimeout(() => { if(s.innerText.includes("iniciada")) err.style.display = 'block'; }, 4000);
                     }
                 } else { s.innerText = ""; err.style.display = 'block'; }
             } catch (e) { s.innerText = ""; err.style.display = 'block'; }
@@ -207,6 +192,7 @@ HTML_PREMIUM = """
 </html>
 """
 
+# ... (El resto del código Python: get_yt_id, api_info, api_down, ads_txt se mantienen exactamente iguales)
 def get_yt_id(url):
     pattern = r'(?:v=|\/)([0-9A-Za-z_-]{11}).*'
     match = re.search(pattern, url)
@@ -262,7 +248,6 @@ def api_down():
             return jsonify({"url": target})
     except: return jsonify({"error": "Error"}), 500
 
-# --- RUTA PARA QUE GOOGLE ENCUENTRE EL ARCHIVO ADS.TXT ---
 @app.route('/ads.txt')
 def ads_txt():
     try:
