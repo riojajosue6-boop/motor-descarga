@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-# --- DISEÑO PREMIUM CON TEXTOS LEGALES ORIGINALES RESTAURADOS ---
+# --- DISEÑO PREMIUM CON PUBLICIDAD Y BOTÓN LIMPIAR ---
 HTML_PREMIUM = """
 <!DOCTYPE html>
 <html lang="es">
@@ -35,7 +35,6 @@ HTML_PREMIUM = """
         .main-card { background: var(--gray); padding: 40px; border-radius: 25px; border: 1px solid #333; margin: 10px auto; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
         h1 { color: var(--red); font-size: 32px; margin-bottom: 20px; }
         
-        /* Contenedor de entrada con botón de limpiar */
         .input-group { position: relative; width: 100%; margin-bottom: 20px; }
         input { width: 100%; padding: 18px 50px 18px 18px; border-radius: 12px; border: 1px solid #333; background: #222; color: #fff; font-size: 16px; box-sizing: border-box; outline: none; }
         .clear-btn { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: #444; color: #fff; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
@@ -69,6 +68,11 @@ HTML_PREMIUM = """
 
     <div class="container">
         <div id="home-sec">
+            <div class="ad-slot">
+                <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-8532381032470048" data-ad-slot="5199614767" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+            </div>
+
             <div class="main-card">
                 <h1>🚀 MOTOR DE DESCARGA</h1>
                 <div class="input-group">
@@ -99,6 +103,11 @@ HTML_PREMIUM = """
                     </div>
                     <button id="finalDownloadBtn" disabled>CONFIRMAR DESCARGA</button>
                 </div>
+            </div>
+
+            <div class="ad-slot">
+                <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-8532381032470048" data-ad-slot="5199614767" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
             </div>
         </div>
 
@@ -160,6 +169,7 @@ HTML_PREMIUM = """
                     document.getElementById('videoTitle').innerText = info.title;
                     p.style.display = 'block'; box.style.display = 'block'; s.innerText = "✅ Detectado";
                     let timeLeft = 5;
+                    dBtn.disabled = true;
                     const countdown = setInterval(() => {
                         timeLeft--;
                         document.getElementById('countdownText').innerText = `El botón se activará en ${timeLeft}...`;
