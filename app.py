@@ -7,10 +7,10 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-# --- CONFIGURACIÓN DE ADS.TXT (Reemplaza con tu ID de editor de Google) ---
+# --- CONFIGURACIÓN DE ADS.TXT (Reemplaza con tu ID real de AdSense) ---
 ADS_TXT_CONTENT = "google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0"
 
-# --- DISEÑO PREMIUM CON ADSENSE Y CONTADOR ---
+# --- DISEÑO PREMIUM CON MENSAJE DE APOYO, CONTADOR Y ADSENSE ---
 HTML_PREMIUM = """
 <!DOCTYPE html>
 <html lang="es">
@@ -42,11 +42,13 @@ HTML_PREMIUM = """
         #videoThumbnail { width: 100%; max-width: 400px; border-radius: 15px; border: 1px solid #444; }
         #videoTitle { margin-top: 10px; margin-bottom:15px; font-weight:bold; color:#fff; }
         
+        #supportMessage { color: #f1c40f; font-size: 14px; margin-bottom: 10px; font-weight: bold; display: none; }
         #finalDownloadBtn { width: 100%; padding: 15px; background: #00aa00; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: not-allowed; margin-top: 15px; opacity: 0.6; }
+        
         .legal-content { display: none; text-align: left; background: #111; padding: 30px; border-radius: 15px; line-height: 1.6; color: #bbb; margin-top: 20px; border: 1px solid #222; }
         footer { padding: 40px; color: #444; font-size: 12px; }
     </style>
-    </head>
+</head>
 <body>
     <nav>
         <a onclick="showSection('home')">Inicio</a>
@@ -54,7 +56,7 @@ HTML_PREMIUM = """
         <a onclick="showSection('terms')">Términos</a>
     </nav>
     <div class="container">
-        <div class="ad-slot">ANUNCIO SUPERIOR (AdSense)</div>
+        <div class="ad-slot">ESPACIO PUBLICITARIO SUPERIOR</div>
 
         <div id="home-sec">
             <div class="main-card">
@@ -74,9 +76,12 @@ HTML_PREMIUM = """
                 <div id="status" style="margin-top:20px; font-weight:bold;"></div>
 
                 <div id="previewSection">
-                    <div class="ad-slot">ANUNCIO INTERMEDIO (AdSense)</div>
+                    <div class="ad-slot">ANUNCIO DINÁMICO</div>
                     <img id="videoThumbnail" src="">
                     <div id="videoTitle"></div>
+                    
+                    <div id="supportMessage">🙏 Apóyanos haciendo clic en la publicidad para mantener el servicio gratuito.</div>
+                    
                     <button id="finalDownloadBtn" disabled>ESPERA 5s...</button>
                 </div>
             </div>
@@ -84,25 +89,15 @@ HTML_PREMIUM = """
 
         <div id="privacy-sec" class="legal-content">
             <h2>Política de Privacidad</h2>
-            <p>En <strong>Motor de Descarga Pro</strong>, nos tomamos muy en serio tu privacidad. Esta política detalla cómo manejamos tus datos:</p>
-            <ul>
-                <li><strong>Cookies y AdSense:</strong> Google, como proveedor externo, utiliza cookies para publicar anuncios en nuestro sitio. El uso de la cookie de DART permite a Google mostrar anuncios basados en las visitas realizadas a este y otros sitios web.</li>
-                <li><strong>Privacidad de Datos:</strong> No recopilamos nombres, correos electrónicos ni almacenamos los videos procesados. Nuestra herramienta actúa como un puente técnico efímero.</li>
-                <li><strong>Analítica:</strong> Usamos herramientas de terceros para medir el tráfico de nuestro sitio de forma anónima.</li>
-            </ul>
+            <p>En <strong>Motor de Descarga Pro</strong>, valoramos tu privacidad. No almacenamos registros personales ni videos procesados. Utilizamos cookies de Google AdSense para mejorar tu experiencia publicitaria.</p>
         </div>
 
         <div id="terms-sec" class="legal-content">
             <h2>Términos y Condiciones</h2>
-            <p>Al acceder a nuestro sitio, aceptas cumplir con los siguientes términos de servicio:</p>
-            <ul>
-                <li><strong>Uso Personal:</strong> El servicio está destinado únicamente para el uso personal y educativo. No nos hacemos responsables por el uso que los usuarios den al material descargado.</li>
-                <li><strong>Propiedad Intelectual:</strong> Respeta los derechos de autor. No utilices esta herramienta para piratear contenido protegido.</li>
-                <li><strong>Restricciones:</strong> No se permite el procesamiento de videos que excedan los 10 minutos para preservar la estabilidad del sistema.</li>
-            </ul>
+            <p>Uso exclusivo para fines personales y educativos. No nos hacemos responsables del uso del contenido descargado.</p>
         </div>
         
-        <div class="ad-slot">ANUNCIO INFERIOR (AdSense)</div>
+        <div class="ad-slot">ESPACIO PUBLICITARIO INFERIOR</div>
     </div>
     <footer>© 2026 Motor de Descarga Pro - Cochabamba 🇧🇴</footer>
 
@@ -126,12 +121,14 @@ HTML_PREMIUM = """
             const p = document.getElementById('previewSection');
             const b = document.getElementById('btnAction');
             const dlBtn = document.getElementById('finalDownloadBtn');
+            const msg = document.getElementById('supportMessage');
 
             if(!url) return alert("Pega un link válido");
             
             b.disabled = true; 
-            s.innerText = "⏳ Analizando enlace de forma segura...";
+            s.innerText = "⏳ Procesando con tecnología Pro...";
             p.style.display = 'none';
+            msg.style.display = 'none';
 
             try {
                 const res = await fetch(`/api/extract?url=${encodeURIComponent(url)}&type=${fmt}`);
@@ -141,13 +138,11 @@ HTML_PREMIUM = """
                     document.getElementById('videoThumbnail').src = data.thumbnail;
                     document.getElementById('videoTitle').innerText = data.title;
                     p.style.display = 'block'; 
-                    s.innerText = "✅ ¡Enlace generado!";
+                    msg.style.display = 'block'; # Mostrar mensaje amable
+                    s.innerText = "✅ ¡Listo!";
                     
-                    // Lógica del contador de 5 segundos
                     let timeLeft = 5;
                     dlBtn.disabled = true;
-                    dlBtn.style.cursor = "not-allowed";
-                    dlBtn.style.opacity = "0.6";
                     
                     const timer = setInterval(() => {
                         if(timeLeft <= 0) {
@@ -167,7 +162,7 @@ HTML_PREMIUM = """
                     s.innerText = "❌ Error: " + data.error;
                 }
             } catch (e) { 
-                s.innerText = "❌ Error de conexión con el servidor."; 
+                s.innerText = "❌ Error de conexión."; 
             }
             b.disabled = false;
         }
@@ -180,7 +175,6 @@ HTML_PREMIUM = """
 def index():
     return render_template_string(HTML_PREMIUM)
 
-# --- RUTA PARA ADS.TXT ---
 @app.route('/ads.txt')
 def ads_txt():
     return Response(ADS_TXT_CONTENT, mimetype='text/plain')
@@ -193,7 +187,7 @@ def api_extract():
     if not url:
         return jsonify({"success": False, "error": "URL requerida"})
 
-    # PROXIES RESIDENCIALES ROTATIVOS
+    # PROXIES RESIDENCIALES ROTATIVOS (FRANCIA PRIMERO)
     proxy_users = ["ksvyuzxs-8", "ksvyuzxs-1", "ksvyuzxs-2", "ksvyuzxs-3", "ksvyuzxs-4", "ksvyuzxs-5", "ksvyuzxs-6", "ksvyuzxs-7", "ksvyuzxs-9", "ksvyuzxs-10"]
     proxy_pass = "r148qqniiwdz"
     proxy_host = "p.webshare.io"
@@ -206,13 +200,12 @@ def api_extract():
             'proxy': proxy_url,
             'quiet': True,
             'no_warnings': True,
-            # Configuración de iPhone para TikTok y Android para YouTube
             'user_agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1',
             'format': 'bestvideo+bestaudio/best' if fmt == 'mp4' else 'bestaudio/best',
             'nocheckcertificate': True,
             'geo_bypass': True,
             'match_filter': lambda info: None if info.get('duration', 0) <= 600 else 'Video muy largo (máx 10 min)',
-            'add_header': ['Referer:https://www.google.com/', 'Origin:https://www.google.com/']
+            'add_header': ['Referer:https://www.google.com/']
         }
 
         try:
@@ -227,16 +220,14 @@ def api_extract():
                 if link:
                     return jsonify({
                         "success": True,
-                        "title": info.get('title', 'Video Procesado'),
+                        "title": info.get('title', 'Video'),
                         "thumbnail": info.get('thumbnail'),
                         "url": link
                     })
-        except Exception as e:
-            if "muy largo" in str(e):
-                return jsonify({"success": False, "error": "El video excede los 10 min."})
+        except Exception:
             continue
 
-    return jsonify({"success": False, "error": "Error de conexión con la plataforma. Reintente."})
+    return jsonify({"success": False, "error": "Plataforma protegida. Intente de nuevo."})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
