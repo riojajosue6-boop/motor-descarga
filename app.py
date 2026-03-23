@@ -88,7 +88,7 @@ HTML_PREMIUM = """
                 </div>
                 <div class="options">
                     <select id="formatInput">
-                        <option value="mp4">🎬 Video MP4</option>
+                        <option value="mp4">🎬 Video MP4 (1080p)</option>
                         <option value="mp3">🎵 Audio MP3</option>
                     </select>
                 </div>
@@ -97,15 +97,14 @@ HTML_PREMIUM = """
                 
                 <div id="errorMessage">
                     <strong>⚠️ Aviso del Sistema:</strong><br>
-                    Lo sentimos, el servidor no pudo procesar la solicitud para este video de YouTube en este momento. Nuestro equipo técnico trabaja para solucionar el inconveniente.<br><br>
-                    Recuerda que puedes descargar videos de otras plataformas (TikTok, Instagram, Facebook) sin problemas mientras lo solucionamos. ¡Intenta más tarde con este video!
+                    <span id="errorText">Lo sentimos, el servidor no pudo procesar la solicitud. Recuerda que para YouTube permitimos videos de máximo 5 minutos en la versión gratuita.</span>
                 </div>
 
                 <div id="previewSection">
                     <img id="videoThumbnail" src="">
                     <div id="videoTitle" style="margin-bottom:15px; font-weight:bold; color:#fff;"></div>
                     <div id="supportBox">
-                        ❤️ <strong>Querido usuario:</strong> Muchas gracias por usar esta herramienta. Por favor, toma unos segundos para visitar las publicidades; esto nos ayuda a mantener los servidores a tu servicio y que tengas una experiencia grata. ¡Muchas gracias!
+                        ❤️ <strong>Querido usuario:</strong> Muchas gracias por usar esta herramienta. Por favor, toma unos segundos para visitar las publicidades; esto nos ayuda a mantener los servidores a tu servicio. ¡Muchas gracias!
                         <span id="countdownText">El botón se activará en 5...</span>
                     </div>
                     <button id="finalDownloadBtn" disabled>CONFIRMAR DESCARGA</button>
@@ -122,9 +121,8 @@ HTML_PREMIUM = """
             <h2>Política de Privacidad</h2>
             <p>En <strong>Motor de Descarga Pro</strong>, valoramos tu privacidad. Esta política describe cómo manejamos la información:</p>
             <ul>
-                <li><strong>Cookies:</strong> Utilizamos cookies para personalizar anuncios y analizar nuestro tráfico. Compartimos información sobre el uso que haces de nuestro sitio con nuestros partners de publicidad y análisis web como Google AdSense.</li>
-                <li><strong>Google AdSense:</strong> Como proveedor externo, Google utiliza cookies para publicar anuncios en este sitio basados en tus visitas anteriores. Puedes inhabilitar el uso de la cookie de publicidad personalizada visitando Preferencias de anuncios de Google.</li>
-                <li><strong>Datos de Usuario:</strong> No almacenamos los videos que descargas ni conservamos registros personales de tus búsquedas. Nuestra herramienta funciona como un puente técnico temporal.</li>
+                <li><strong>Cookies:</strong> Utilizamos cookies para personalizar anuncios y analizar nuestro tráfico.</li>
+                <li><strong>Google AdSense:</strong> Como proveedor externo, Google utiliza cookies para publicar anuncios en este sitio.</li>
             </ul>
         </div>
 
@@ -132,15 +130,10 @@ HTML_PREMIUM = """
             <h2>Términos y Condiciones</h2>
             <p>Al utilizar este sitio, aceptas los siguientes términos:</p>
             <ul>
-                <li><strong>Uso Responsable:</strong> Esta herramienta está diseñada para descargar contenido de uso personal y educativo. El usuario es el único responsable por el respeto a los derechos de autor de los videos descargados.</li>
-                <li><strong>Sin Garantías:</strong> No garantizamos que el servicio sea ininterrumpido. El acceso a ciertas plataformas (como YouTube) puede verse limitado por cambios técnicos ajenos a nuestra voluntad.</li>
-                <li><strong>Limitación de Responsabilidad:</strong> No nos hacemos responsables por el uso indebido del material descargado ni por daños técnicos derivados del uso de la herramienta.</li>
+                <li><strong>Uso Responsable:</strong> Esta herramienta está diseñada para contenido de uso personal de máximo 5 minutos para YouTube.</li>
+                <li><strong>Derechos:</strong> El usuario es responsable por el respeto a los derechos de autor.</li>
             </ul>
         </div>
-    </div>
-    <div style="max-width:800px; margin:40px auto; padding:20px; color:#888; font-size:14px; text-align:left; line-height:1.6; border-top: 1px solid #222;">
-        <h3>¿Cómo descargar videos en Bolivia con nuestra herramienta?</h3>
-        <p>Nuestro <strong>Motor de Descarga Pro</strong> es la solución más rápida en Bolivia para obtener tus videos favoritos. Si buscas <strong>descargar videos de TikTok sin marca de agua</strong> o convertir música de YouTube a <strong>MP3 de alta calidad</strong>, estás en el lugar correcto. Solo pega el link, espera 5 segundos y disfruta de tu contenido en cualquier dispositivo.</p>
     </div>
     <footer>© 2026 Descargador Pro - Cochabamba 🇧🇴</footer>
 
@@ -160,6 +153,7 @@ HTML_PREMIUM = """
 
         async function processVideo() {
             const url = document.getElementById('urlInput').value;
+            const format = document.getElementById('formatInput').value;
             const s = document.getElementById('status');
             const p = document.getElementById('previewSection');
             const err = document.getElementById('errorMessage');
@@ -169,15 +163,17 @@ HTML_PREMIUM = """
             
             if(!url) return alert("Pega un link");
             b.disabled = true; p.style.display = 'none'; err.style.display = 'none'; box.style.display = 'none';
-            s.innerText = "⏳ Analizando enlace...";
+            s.innerText = "⏳ Analizando enlace y verificando duración...";
 
             try {
-                const res = await fetch('/api/info?url=' + encodeURIComponent(url));
+                const res = await fetch(`/api/info?url=${encodeURIComponent(url)}&type=${format}`);
                 const info = await res.json();
+                
                 if(info.success) {
                     document.getElementById('videoThumbnail').src = info.thumbnail;
                     document.getElementById('videoTitle').innerText = info.title;
                     p.style.display = 'block'; box.style.display = 'block'; s.innerText = "✅ Detectado";
+                    
                     let timeLeft = 5;
                     dBtn.disabled = true;
                     const countdown = setInterval(() => {
@@ -189,34 +185,14 @@ HTML_PREMIUM = """
                             dBtn.disabled = false; dBtn.innerText = "CONFIRMAR DESCARGA";
                         }
                     }, 1000);
-                    dBtn.onclick = () => generateDownload(url, document.getElementById('formatInput').value);
-                } else { s.innerText = ""; err.style.display = 'block'; }
-            } catch (e) { s.innerText = "❌ Error."; err.style.display = 'block'; }
+                    dBtn.onclick = () => { window.open(info.download_url, '_blank'); s.innerText = "✅ Descarga iniciada"; };
+                } else { 
+                    s.innerText = ""; 
+                    document.getElementById('errorText').innerText = info.error || "No se pudo procesar este video.";
+                    err.style.display = 'block'; 
+                }
+            } catch (e) { s.innerText = "❌ Error técnico."; err.style.display = 'block'; }
             b.disabled = false;
-        }
-
-        async function generateDownload(url, tipo) {
-            const s = document.getElementById('status');
-            const err = document.getElementById('errorMessage');
-            s.innerText = "🚀 Generando descarga...";
-            try {
-                const res = await fetch(`/api/down?url=${encodeURIComponent(url)}&type=${tipo}`);
-                const data = await res.json();
-                if(data.url) {
-                    const a = document.createElement('a');
-                    a.href = data.url;
-                    a.target = "_blank";
-                    a.setAttribute('download', 'video_pro.mp4'); 
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    s.innerText = "✅ Descarga iniciada";
-                    
-                    if(url.includes('youtube.com') || url.includes('youtu.be')) {
-                        setTimeout(() => { if(s.innerText.includes("iniciada")) err.style.display = 'block'; }, 4000);
-                    }
-                } else { s.innerText = ""; err.style.display = 'block'; }
-            } catch (e) { s.innerText = ""; err.style.display = 'block'; }
         }
     </script>
 </body>
@@ -235,39 +211,53 @@ def index():
 @app.route('/api/info')
 def api_info():
     url = request.args.get('url')
-    if not url: return jsonify({"success": False})
-    try:
-        headers = {"x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585", "x-rapidapi-host": "download-all-in-one-lite.p.rapidapi.com"}
-        r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", params={"url": url}, headers=headers, timeout=15)
-        data = r.json()
-        thumb = data.get("thumbnail")
-        if not thumb and ("youtube.com" in url or "youtu.be" in url):
-            yid = get_yt_id(url)
-            thumb = f"https://img.youtube.com/vi/{yid}/hqdefault.jpg"
-        return jsonify({"success": True, "title": data.get("title", "Video"), "thumbnail": thumb})
-    except: return jsonify({"success": False})
-
-@app.route('/api/down')
-def api_down():
-    url = request.args.get('url')
     fmt = request.args.get('type', 'mp4')
-    headers = {"x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585"}
+    if not url: return jsonify({"success": False})
+    
+    headers = {
+        "x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585",
+        "Content-Type": "application/json"
+    }
+
     try:
+        # LÓGICA PARA YOUTUBE (NUEVA API CON CANDADOS)
         if "youtube.com" in url or "youtu.be" in url:
-            yid = get_yt_id(url)
-            headers["x-rapidapi-host"] = "yt-api.p.rapidapi.com"
-            r = requests.get("https://yt-api.p.rapidapi.com/dl", params={"id": yid}, headers=headers, timeout=20)
+            headers["x-rapidapi-host"] = "youtube-info-download-api.p.rapidapi.com"
+            # Candados: 1080p o MP3, Audio 128kbps, SIN duración extendida (Límite 5 min)
+            params = {
+                "format": "1080" if fmt == "mp4" else "mp3",
+                "url": url,
+                "audio_quality": "128",
+                "allow_extended_duration": "false",
+                "add_info": "0"
+            }
+            r = requests.get("https://youtube-info-download-api.p.rapidapi.com/ajax/download.php", params=params, headers=headers, timeout=15)
             data = r.json()
-            link = None
-            f_list = data.get('adaptiveFormats', []) if fmt == 'mp3' else data.get('formats', [])
-            for f in f_list:
-                if fmt == 'mp3' and 'audio' in f.get('mimeType', ''): link = f.get('url'); break
-                if fmt == 'mp4' and 'video' in f.get('mimeType', ''): link = f.get('url'); break
-            return jsonify({"url": link or data.get('link')})
+            
+            if data.get("success"):
+                # Verificamos multiplicador (Si es > 1 el video es demasiado largo)
+                if data.get("extended_duration", {}).get("multiplier", 1) > 1:
+                    return jsonify({"success": False, "error": "⚠️ El video supera el límite de 5 minutos de la versión gratuita."})
+                
+                yid = get_yt_id(url)
+                thumb = f"https://img.youtube.com/vi/{yid}/hqdefault.jpg"
+                # Esta API requiere un segundo paso para obtener el link final o el ID es suficiente para su reproductor
+                # Usualmente devuelven un 'id' para seguimiento de progreso.
+                return jsonify({
+                    "success": True, 
+                    "title": data.get("title", "Video YouTube"), 
+                    "thumbnail": thumb,
+                    "download_url": f"https://p.savenow.to/api/download?id={data.get('id')}" # Ajustar según documentación final de descarga
+                })
+            else:
+                return jsonify({"success": False, "error": "No se pudo procesar este video de YouTube."})
+
+        # LÓGICA PARA OTRAS REDES (TIKTOK, IG, FB)
         else:
             headers["x-rapidapi-host"] = "download-all-in-one-lite.p.rapidapi.com"
-            r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", params={"url": url}, headers=headers, timeout=20)
+            r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", params={"url": url}, headers=headers, timeout=15)
             data = r.json()
+            
             medias = data.get("medias", [])
             target = None
             if medias:
@@ -275,17 +265,20 @@ def api_down():
                     if fmt == 'mp3' and 'audio' in str(m.get('type')).lower(): target = m.get('url'); break
                     if fmt == 'mp4' and 'video' in str(m.get('type')).lower(): target = m.get('url'); break
                 if not target: target = medias[0].get('url')
-            return jsonify({"url": target})
-    except: return jsonify({"error": "Error"}), 500
+            
+            return jsonify({
+                "success": True, 
+                "title": data.get("title", "Video RRSS"), 
+                "thumbnail": data.get("thumbnail"),
+                "download_url": target
+            })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": "Error de conexión con el servidor."})
 
 @app.route('/ads.txt')
 def ads_txt():
-    try:
-        with open('ads.txt', 'r') as f:
-            content = f.read()
-        return content, 200, {'Content-Type': 'text/plain'}
-    except:
-        return "google.com, pub-8532381032470048, DIRECT, f08c47fec0942fa0", 200, {'Content-Type': 'text/plain'}
+    return "google.com, pub-8532381032470048, DIRECT, f08c47fec0942fa0", 200, {'Content-Type': 'text/plain'}
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
