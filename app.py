@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-# --- TU DISEÑO PREMIUM ORIGINAL (RESTAURADO AL 100%) ---
+# --- TU DISEÑO PREMIUM ORIGINAL ---
 HTML_PREMIUM = """
 <!DOCTYPE html>
 <html lang="es">
@@ -69,24 +69,20 @@ HTML_PREMIUM = """
                 </div>
             </div>
         </div>
-
         <div id="privacy-sec" class="legal-content">
             <h2>Política de Privacidad</h2>
-            <p>En <strong>Motor de Descarga Pro</strong>, valoramos tu privacidad. Esta política describe cómo manejamos la información:</p>
+            <p>En <strong>Motor de Descarga Pro</strong>, valoramos tu privacidad...</p>
             <ul>
-                <li><strong>Cookies:</strong> Utilizamos cookies para personalizar anuncios y analizar nuestro tráfico. Compartimos información sobre el uso que haces de nuestro sitio con nuestros partners de publicidad y análisis web como Google AdSense.</li>
-                <li><strong>Google AdSense:</strong> Como proveedor externo, Google utiliza cookies para publicar anuncios en este sitio basados en tus visitas anteriores. Puedes inhabilitar el uso de la cookie de publicidad personalizada visitando Preferencias de anuncios de Google.</li>
-                <li><strong>Datos de Usuario:</strong> No almacenamos los videos que descargas ni conservamos registros personales de tus búsquedas. Nuestra herramienta funciona como un puente técnico temporal.</li>
+                <li><strong>Cookies:</strong> Usamos cookies para analítica y anuncios.</li>
+                <li><strong>Datos:</strong> No almacenamos tus videos ni registros personales.</li>
             </ul>
         </div>
-
         <div id="terms-sec" class="legal-content">
             <h2>Términos y Condiciones</h2>
-            <p>Al utilizar este sitio, aceptas los siguientes términos:</p>
+            <p>Al utilizar este sitio, aceptas:</p>
             <ul>
-                <li><strong>Uso Responsable:</strong> Esta herramienta está diseñada para descargar contenido de uso personal y educativo. El usuario es el único responsable por el respeto a los derechos de autor de los videos descargados.</li>
-                <li><strong>Sin Garantías:</strong> No garantizamos que el servicio sea ininterrumpido. El acceso a ciertas plataformas (como YouTube) puede verse limitado por cambios técnicos ajenos a nuestra voluntad.</li>
-                <li><strong>Limitación de Responsabilidad:</strong> No nos hacemos responsables por el uso indebido del material descargado ni por daños técnicos derivados del uso de la herramienta.</li>
+                <li>Uso personal y educativo bajo tu responsabilidad.</li>
+                <li>Límite de duración de 10 minutos por video.</li>
             </ul>
         </div>
     </div>
@@ -136,4 +132,54 @@ def index():
 
 @app.route('/api/extract')
 def api_extract():
-    url = request.args.
+    url = request.args.get('url')
+    fmt = request.args.get('type', 'mp4')
+    
+    if not url:
+        return jsonify({"success": False, "error": "URL requerida"})
+
+    # --- CONFIGURACIÓN DE PROXIES ---
+    proxy_users = ["ksvyuzxs-8", "ksvyuzxs-1", "ksvyuzxs-2", "ksvyuzxs-3", "ksvyuzxs-4", "ksvyuzxs-5", "ksvyuzxs-6", "ksvyuzxs-7", "ksvyuzxs-9", "ksvyuzxs-10"]
+    proxy_pass = "r148qqniiwdz"
+    proxy_host = "p.webshare.io"
+    proxy_port = "80"
+
+    for user in proxy_users:
+        proxy_url = f"http://{user}:{proxy_pass}@{proxy_host}:{proxy_port}"
+        ydl_opts = {
+            'proxy': proxy_url,
+            'quiet': True,
+            'no_warnings': True,
+            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' if fmt == 'mp4' else 'bestaudio[ext=m4a]/bestaudio',
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'nocheckcertificate': True,
+            'geo_bypass': True,
+            'match_filter': lambda info: None if info.get('duration', 0) <= 600 else 'Video muy largo',
+        }
+
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+                link = info.get('url')
+                if not link and 'formats' in info:
+                    valid_formats = [f for f in info['formats'] if f.get('url')]
+                    if valid_formats:
+                        link = valid_formats[-1]['url']
+                
+                if link:
+                    return jsonify({
+                        "success": True,
+                        "title": info.get('title', 'Video'),
+                        "thumbnail": info.get('thumbnail'),
+                        "url": link
+                    })
+        except Exception as e:
+            if "muy largo" in str(e):
+                return jsonify({"success": False, "error": "El video excede los 10 minutos."})
+            continue
+
+    return jsonify({"success": False, "error": "Servicio ocupado. Reintente."})
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
