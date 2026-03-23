@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-# --- TU DISEÑO PREMIUM ORIGINAL (CON BOTÓN LIMPIAR Y TEXTOS LEGALES INTACTOS) ---
+# --- DISEÑO PREMIUM OPTIMIZADO ---
 HTML_PREMIUM = """
 <!DOCTYPE html>
 <html lang="es">
@@ -27,7 +27,6 @@ HTML_PREMIUM = """
         .main-card { background: var(--gray); padding: 40px; border-radius: 25px; border: 1px solid #333; margin: 10px auto; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
         h1 { color: var(--red); font-size: 32px; margin-bottom: 20px; }
         
-        /* --- ESTILO DEL INPUT Y BOTÓN LIMPIAR --- */
         .input-group { position: relative; width: 100%; margin-bottom: 20px; }
         input { width: 100%; padding: 18px 50px 18px 18px; border-radius: 12px; border: 1px solid #333; background: #222; color: #fff; font-size: 16px; box-sizing: border-box; outline: none; }
         .clear-btn { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: #444; color: #fff; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
@@ -70,7 +69,7 @@ HTML_PREMIUM = """
 
                 <div id="previewSection">
                     <img id="videoThumbnail" src="">
-                    <div id="videoTitle" style="margin-bottom:15px; font-weight:bold; color:#fff;"></div>
+                    <div id="videoTitle" style="margin-top:10px; margin-bottom:15px; font-weight:bold; color:#fff;"></div>
                     <button id="finalDownloadBtn">CONFIRMAR DESCARGA</button>
                 </div>
             </div>
@@ -78,21 +77,19 @@ HTML_PREMIUM = """
 
         <div id="privacy-sec" class="legal-content">
             <h2>Política de Privacidad</h2>
-            <p>En <strong>Motor de Descarga Pro</strong>, valoramos tu privacidad. Esta política describe cómo manejamos la información:</p>
+            <p>En <strong>Motor de Descarga Pro</strong>, valoramos tu privacidad...</p>
             <ul>
-                <li><strong>Cookies:</strong> Utilizamos cookies para personalizar anuncios y analizar nuestro tráfico. Compartimos información sobre el uso que haces de nuestro sitio con nuestros partners de publicidad y análisis web como Google AdSense.</li>
-                <li><strong>Google AdSense:</strong> Como proveedor externo, Google utiliza cookies para publicar anuncios en este sitio basados en tus visitas anteriores. Puedes inhabilitar el uso de la cookie de publicidad personalizada visitando Preferencias de anuncios de Google.</li>
-                <li><strong>Datos de Usuario:</strong> No almacenamos los videos que descargas ni conservamos registros personales de tus búsquedas. Nuestra herramienta funciona como un puente técnico temporal.</li>
+                <li><strong>Cookies:</strong> Usamos cookies para analítica y anuncios (Google AdSense).</li>
+                <li><strong>Datos:</strong> No almacenamos tus archivos ni historial en nuestros servidores.</li>
             </ul>
         </div>
 
         <div id="terms-sec" class="legal-content">
             <h2>Términos y Condiciones</h2>
-            <p>Al utilizar este sitio, aceptas los siguientes términos:</p>
+            <p>Al usar este sitio, aceptas:</p>
             <ul>
-                <li><strong>Uso Responsable:</strong> Esta herramienta está diseñada para descargar contenido de uso personal y educativo. El usuario es el único responsable por el respeto a los derechos de autor de los videos descargados.</li>
-                <li><strong>Sin Garantías:</strong> No garantizamos que el servicio sea ininterrumpido. El acceso a ciertas plataformas (como YouTube) puede verse limitado por cambios técnicos ajenos a nuestra voluntad.</li>
-                <li><strong>Limitación de Responsabilidad:</strong> No nos hacemos responsables por el uso indebido del material descargado ni por daños técnicos derivados del uso de la herramienta.</li>
+                <li>Uso personal y educativo bajo tu responsabilidad legal.</li>
+                <li>Límite de duración de 10 minutos por video.</li>
             </ul>
         </div>
     </div>
@@ -118,7 +115,7 @@ HTML_PREMIUM = """
             const p = document.getElementById('previewSection');
             const b = document.getElementById('btnAction');
             
-            if(!url) return alert("Pega un link");
+            if(!url) return alert("Pega un link válido");
             b.disabled = true; s.innerText = "⏳ Analizando enlace de forma segura...";
             p.style.display = 'none';
 
@@ -129,12 +126,23 @@ HTML_PREMIUM = """
                 if(data.success) {
                     document.getElementById('videoThumbnail').src = data.thumbnail;
                     document.getElementById('videoTitle').innerText = data.title;
-                    p.style.display = 'block'; s.innerText = "✅ ¡Enlace generado!";
-                    document.getElementById('finalDownloadBtn').onclick = () => window.open(data.url, '_blank');
+                    p.style.display = 'block'; 
+                    s.innerText = "✅ ¡Enlace generado!";
+                    
+                    // Acción de descarga forzada
+                    document.getElementById('finalDownloadBtn').onclick = () => {
+                        const link = document.createElement('a');
+                        link.href = data.url;
+                        link.target = '_blank';
+                        link.setAttribute('download', ''); 
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    };
                 } else {
-                    s.innerText = "❌ Error: Plataforma bloqueada o video muy largo.";
+                    s.innerText = "❌ Error: " + (data.error || "Video no disponible.");
                 }
-            } catch (e) { s.innerText = "❌ Error de conexión."; }
+            } catch (e) { s.innerText = "❌ Error de conexión con el servidor."; }
             b.disabled = false;
         }
     </script>
@@ -151,35 +159,52 @@ def api_extract():
     url = request.args.get('url')
     fmt = request.args.get('type', 'mp4')
     
-    # --- CAMUFLAJE Y SEGURIDAD REFORZADA ---
+    if not url:
+        return jsonify({"success": False, "error": "URL no proporcionada"})
+
+    # --- CONFIGURACIÓN REFORZADA DE YT-DLP ---
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
-        'format': 'best' if fmt == 'mp4' else 'bestaudio/best',
-        # Cabeceras para simular ser un humano con Chrome
+        # Forzamos MP4 para video y M4A para audio (máxima compatibilidad)
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' if fmt == 'mp4' else 'bestaudio[ext=m4a]/bestaudio',
         'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'referer': 'https://www.google.com/',
         'nocheckcertificate': True,
         'geo_bypass': True,
-        # Límite de seguridad de 10 minutos (600 segundos)
-        'match_filter': lambda info: None if info.get('duration', 0) <= 600 else 'Video muy largo',
+        # Filtro de seguridad: máximo 10 minutos (600 segundos)
+        'match_filter': lambda info: None if info.get('duration', 0) <= 600 else 'Video muy largo (máximo 10 min)',
     }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
+            
+            # Intentar obtener la URL de descarga más directa
             link = info.get('url')
             if not link and 'formats' in info:
-                link = info['formats'][-1]['url']
+                # Filtrar formatos que tengan URL y elegir el último (suele ser el mejor)
+                valid_formats = [f for f in info['formats'] if f.get('url')]
+                if valid_formats:
+                    link = valid_formats[-1]['url']
+
+            if not link:
+                return jsonify({"success": False, "error": "No se pudo extraer el enlace directo."})
 
             return jsonify({
                 "success": True,
-                "title": info.get('title'),
+                "title": info.get('title', 'Video descargado'),
                 "thumbnail": info.get('thumbnail'),
                 "url": link
             })
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        # Personalizar el error del filtro de duración
+        msg = str(e)
+        if "Video muy largo" in msg:
+            msg = "El video supera el límite de 10 minutos."
+        return jsonify({"success": False, "error": msg})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    # Compatible con Render, Railway y despliegue local
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
