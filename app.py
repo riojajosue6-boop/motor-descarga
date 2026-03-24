@@ -12,19 +12,20 @@ def get_ydl_opts():
     pw = "r148qqniiwdz"
     proxy = f"http://{user}:{pw}@p.webshare.io:80"
     
-    # Buscamos el archivo de cookies que subiste
-    cookie_path = 'cookies.txt'
-    
-    opts = {
+    return {
         'proxy': proxy,
+        'cookiefile': 'cookies.txt',
         'quiet': True,
-        'no_warnings': True,
         'format': 'best',
+        # Cambiamos a cliente "WEB" que es más robusto con cookies
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         'nocheckcertificate': True,
-        # Engañamos a YT como si fuera un usuario real de Android
-        'user_agent': 'Mozilla/5.0 (Linux; Android 11; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36',
-        'socket_timeout': 30,
-        'extract_flat': False,
+        'socket_timeout': 40,
+        'extractor_args': {'youtube': {'player_client': ['web', 'android']}},
+        'http_headers': {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-us,en;q=0.5',
+        }
     }
 
     # SI EL ARCHIVO EXISTE, LO USAMOS (Esto es lo que falta)
