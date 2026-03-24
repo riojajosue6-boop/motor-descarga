@@ -2,31 +2,33 @@ import os
 import requests
 import re
 import yt_dlp
-from flask import Flask, request, jsonify, render_template_string, Response
+from flask import Flask, request, jsonify, render_template_string, Response, stream_with_context
 from flask_cors import CORS
+import random
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-# --- CONFIGURACIÓN DE PROXIES ---
+# --- CONFIGURACIÓN DE PROXIES RESIDENCIALES (FRANCIA - PAKISTÁN - COREA) ---
 proxy_users = ["ksvyuzxs-8", "ksvyuzxs-1", "ksvyuzxs-2", "ksvyuzxs-3", "ksvyuzxs-4", "ksvyuzxs-5", "ksvyuzxs-6", "ksvyuzxs-7", "ksvyuzxs-9", "ksvyuzxs-10"]
 proxy_pass = "r148qqniiwdz"
 proxy_host = "p.webshare.io"
 proxy_port = "80"
 
-def get_proxy_url(index=0):
+def get_proxy(index=0):
     user = proxy_users[index % len(proxy_users)]
-    return f"http://{user}:{proxy_pass}@{proxy_host}:{proxy_port}"
+    p_url = f"http://{user}:{proxy_pass}@{proxy_host}:{proxy_port}"
+    return {"http": p_url, "https": p_url}
 
-# --- DISEÑO PREMIUM ORIGINAL RECUPERADO ---
+# --- TU DISEÑO PREMIUM ORIGINAL RECUPERADO ---
 HTML_PREMIUM = """
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 Motor de Descarga Pro | Bolivia</title>
+    <title>🚀 Motor de Descarga Pro | Bolivia (FB, IG, YT, TT)</title>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8532381032470048" crossorigin="anonymous"></script>
     <style>
         :root { --red: #ff0000; --dark: #0a0a0a; --gray: #1a1a1a; --text: #eee; }
@@ -47,7 +49,6 @@ HTML_PREMIUM = """
         #supportBox { display: none; background: #1a2a1a; color: #99ff99; border: 1px solid #00aa00; padding: 20px; border-radius: 15px; margin: 20px 0; font-size: 14px; }
         #finalDownloadBtn { width: 100%; padding: 15px; background: #00aa00; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 15px; }
         #finalDownloadBtn:disabled { background: #333; color: #777; cursor: not-allowed; opacity: 0.6; }
-        .legal-content { display: none; text-align: left; background: #111; padding: 30px; border-radius: 15px; line-height: 1.6; color: #bbb; margin-top: 20px; border: 1px solid #222; }
         footer { padding: 40px; color: #444; font-size: 12px; }
     </style>
 </head>
@@ -77,13 +78,13 @@ HTML_PREMIUM = """
                 <button id="btnAction" onclick="processVideo()">PROCESAR VIDEO</button>
                 <div id="status" style="margin-top:20px; font-weight:bold;"></div>
                 <div id="previewSection">
-                    <img id="videoThumbnail" src="">
+                    <img id="videoThumbnail" src="" style="width:100%; max-width:400px; border-radius:15px; border:1px solid #444;">
                     <div id="videoTitle" style="margin-top:10px; font-weight:bold; color:#fff;"></div>
                     <div id="supportBox">
                         ❤️ <strong>Apóyanos visitando las publicidades</strong> para mantener el servicio gratuito.
                         <span id="countdownText" style="display:block; margin-top:10px;">El botón se activará en 5...</span>
                     </div>
-                    <button id="finalDownloadBtn" disabled>CONFIRMAR DESCARGA</button>
+                    <button id="finalDownloadBtn" disabled>DESCARGAR AHORA</button>
                 </div>
             </div>
         </div>
@@ -110,6 +111,7 @@ HTML_PREMIUM = """
         }
         async function processVideo() {
             const url = document.getElementById('urlInput').value;
+            const fmt = document.getElementById('formatInput').value;
             const s = document.getElementById('status');
             const p = document.getElementById('previewSection');
             const b = document.getElementById('btnAction');
@@ -131,20 +133,11 @@ HTML_PREMIUM = """
                         document.getElementById('countdownText').innerText = `Activando botón en ${timeLeft}...`;
                         if(timeLeft <= 0) { clearInterval(countdown); document.getElementById('countdownText').style.display = 'none'; dBtn.disabled = false; }
                     }, 1000);
-                    dBtn.onclick = () => generateDownload(url, document.getElementById('formatInput').value);
+                    // LÓGICA DE DESCARGA ACTUÁLIZADA: USAMOS EL PROXY DE RENDER
+                    dBtn.onclick = () => window.location.href = `/api/proxy_download?url=${encodeURIComponent(url)}&type=${fmt}`;
                 } else { s.innerText = "❌ Error: Link bloqueado o inválido."; }
             } catch (e) { s.innerText = "❌ Error de servidor."; }
             b.disabled = false;
-        }
-        async function generateDownload(url, tipo) {
-            const s = document.getElementById('status');
-            s.innerText = "🚀 Generando descarga...";
-            try {
-                const res = await fetch(`/api/down?url=${encodeURIComponent(url)}&type=${tipo}`);
-                const data = await res.json();
-                if(data.url) { window.open(data.url, '_blank'); s.innerText = "✅ Descarga iniciada"; }
-                else { s.innerText = "❌ Error al generar el enlace."; }
-            } catch (e) { s.innerText = "❌ Error en el servidor."; }
         }
     </script>
 </body>
@@ -163,10 +156,9 @@ def ads_txt():
 def api_info():
     url = request.args.get('url')
     if not url: return jsonify({"success": False})
-    
-    # Usamos yt-dlp directamente con los proxies de Webshare (Más potente que cualquier API)
+    # Usamos yt-dlp con proxies residenciales de Webshare
     for i in range(3):
-        proxy = get_proxy_url(i)
+        proxy = get_proxy(i)["http"]
         ydl_opts = {
             'proxy': proxy,
             'quiet': True,
@@ -186,24 +178,50 @@ def api_info():
             continue
     return jsonify({"success": False})
 
-@app.route('/api/down')
-def api_down():
+# --- RUTA DE DESCARGA PROXY (SOLUCIÓN AL BLOQUEO DE NAVEGADOR) ---
+@app.route('/api/proxy_download')
+def proxy_download():
     url = request.args.get('url')
     fmt = request.args.get('type', 'mp4')
+    if not url: return "URL requerida", 400
+
+    # Primero obtenemos el enlace real usando proxies residenciales
     for i in range(3):
-        proxy = get_proxy_url(i)
+        proxy = get_proxy(i)["http"]
         ydl_opts = {
             'proxy': proxy,
             'quiet': True,
-            'format': 'bestaudio/best' if fmt == 'mp3' else 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
+            'format': 'bestaudio/best' if fmt == 'mp3' else 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
-                return jsonify({"url": info.get('url')})
+                real_link = info.get('url')
+                title = info.get('title', 'video')
+                ext = 'mp3' if fmt == 'mp3' else 'mp4'
+                
+                if not real_link: continue
+
+                # AHORA ACTUAMOS COMO TÚNEL: EL SERVIDOR RENDER DESCARGA EL ARCHIVO
+                def stream_file():
+                    with requests.get(real_link, stream=True, proxies=get_proxy(i)) as r:
+                        r.raise_for_status()
+                        for chunk in r.iter_content(chunk_size=8192):
+                            yield chunk
+
+                # LE ENTREGAMOS EL ARCHIVO AL CELULAR COMO SI FUERA NUESTRO
+                headers = {
+                    'Content-Disposition': f'attachment; filename="{title}.{ext}"',
+                    'Content-Type': 'audio/mpeg' if ext == 'mp3' else 'video/mp4'
+                }
+                return Response(stream_with_context(stream_file()), headers=headers)
+
         except:
             continue
-    return jsonify({"error": "No link"}), 500
+
+    return "❌ Error: No se pudo generar el túnel de descarga.", 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
