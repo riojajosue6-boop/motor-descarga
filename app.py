@@ -155,3 +155,17 @@ def descargar_archivo():
                         headers={"Content-Disposition": "attachment; filename=video_motor_pro.mp4"})
     except Exception as e:
         return f"Error: {str(e)}"
+
+@app.route('/privacidad')
+def privacidad(): return "Privacidad Protegida."
+
+@app.route('/terminos')
+def terminos(): return "Uso personal únicamente."
+
+@app.route('/ads.txt')
+def ads_txt(): return Response("google.com, pub-8532381032470048, DIRECT, f08c47fec0942fa0", mimetype='text/plain')
+
+if __name__ == "__main__":
+    # CONFIGURACIÓN CRUCIAL PARA RAILWAY
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
