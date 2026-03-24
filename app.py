@@ -10,7 +10,9 @@ CORS(app)
 def get_ydl_opts():
     user = "ksvyuzxs-rotate" 
     pw = "r148qqniiwdz"
-    proxy = f"http://{user}:{pw}@p.webshare.io:80"
+    
+    # CAMBIO REALIZADO: Se cambió el puerto de :80 a :10000 para saltar bloqueos
+    proxy = f"http://{user}:{pw}@p.webshare.io:10000" 
     
     return {
         'proxy': proxy,
@@ -24,7 +26,6 @@ def get_ydl_opts():
     }
 
 # --- DISEÑO DE LA PÁGINA ---
-# Asegúrate de que esta variable exista tal cual
 HTML_PRO = '''
 <!DOCTYPE html>
 <html lang="es">
@@ -93,18 +94,34 @@ HTML_PRO = '''
 
 @app.route('/')
 def home():
-    # CAMBIO: Ahora enviamos HTML_PRO directamente para evitar el IndexError
     return render_template_string(HTML_PRO)
 
 @app.route('/api/info')
 def info():
     u = request.args.get('url')
-    if not u or "youtube" in u or "youtu.be" in u: return jsonify({"success": False})
+    if not u: return jsonify({"success": False})
+    
+    # --- LIMPIEZA DE ENLACE ---
+    if "?" in u:
+        u = u.split("?")[0]
+    
     try:
-        with yt_dlp.YoutubeDL(get_ydl_opts()) as ydl:
+        ydl_config = get_ydl_opts()
+        ydl_config.update({
+            'force_generic_extractor': False,
+            'youtube_include_dash_manifest': False,
+        })
+        
+        with yt_dlp.YoutubeDL(ydl_config) as ydl:
             i = ydl.extract_info(u, download=False)
-            return jsonify({"success": True, "url": i.get('url'), "title": i.get('title')})
-    except: return jsonify({"success": False})
+            return jsonify({
+                "success": True, 
+                "url": i.get('url'), 
+                "title": i.get('title', 'Video TikTok')
+            })
+    except Exception as e:
+        print(f"ERROR TIKTOK: {e}")
+        return jsonify({"success": False})
 
 @app.route('/privacidad')
 def privacidad(): return "<h1>Privacidad</h1><p>No guardamos tus datos.</p>"
@@ -116,4 +133,5 @@ def terminos(): return "<h1>Términos</h1><p>Uso personal solamente.</p>"
 def ads_txt(): return Response("google.com, pub-8532381032470048, DIRECT, f08c47fec0942fa0", mimetype='text/plain')
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
