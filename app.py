@@ -8,7 +8,6 @@ CORS(app)
 
 # --- CONFIGURACIÓN DE PROXIES (WEBSHARE ROTATIVO) ---
 def get_ydl_opts():
-    # Usamos el usuario con -rotate para que Webshare cambie la IP en cada clic
     user = "ksvyuzxs-rotate"
     pw = "r148qqniiwdz"
     proxy = f"http://{user}:{pw}@p.webshare.io:80"
@@ -17,12 +16,16 @@ def get_ydl_opts():
         'proxy': proxy,
         'quiet': True,
         'no_warnings': True,
+        # TRUCO MAESTRO: Forzamos el cliente de Android para saltar el bloqueo de 403
         'format': 'best',
         'nocheckcertificate': True,
-        # Engañamos a YouTube pareciendo un celular Android moderno
-        'user_agent': 'Mozilla/5.0 (Linux; Android 13; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36',
+        'user_agent': 'com.google.android.youtube/19.05.36 (Linux; U; Android 11; en_US) Screenscale/3.0',
         'socket_timeout': 30,
-        'no_cookies': True
+        'no_cookies': True,
+        # Agregamos estos argumentos para confundir al servidor de Google
+        'referer': 'https://www.google.com/',
+        'add_header': ['Accept-Language: en-US,en;q=0.9'],
+        'extractor_args': {'youtube': {'player_client': ['android']}}
     }
 
 # --- DISEÑO DE LA PÁGINA (HTML + CSS + JS) ---
