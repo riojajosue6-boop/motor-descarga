@@ -169,46 +169,64 @@ def get_yt_id(url):
 def index():
     return render_template_string(HTML_PREMIUM)
 
-@app.route('/api/info')
-def api_info():
-    url = request.args.get('url')
-    if not url: return jsonify({"success": False})
-    try:
-        headers = {"x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585", "x-rapidapi-host": "download-all-in-one-lite.p.rapidapi.com"}
-        r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", params={"url": url}, headers=headers, proxies=get_proxy(), timeout=15)
-        data = r.json()
-        return jsonify({"success": True, "title": data.get("title", "Video"), "thumbnail": data.get("thumbnail")})
-    except: return jsonify({"success": False})
-
 @app.route('/api/down')
 def api_down():
     url = request.args.get('url')
     fmt = request.args.get('type', 'mp4')
     headers = {"x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585"}
+    
     try:
+        # MÉTODO 1: YouTube Específico
         if "youtube.com" in url or "youtu.be" in url:
             yid = get_yt_id(url)
             headers["x-rapidapi-host"] = "yt-api.p.rapidapi.com"
             r = requests.get("https://yt-api.p.rapidapi.com/dl", params={"id": yid}, headers=headers, proxies=get_proxy(), timeout=20)
             data = r.json()
+            
+            # Buscamos el mejor link disponible
             link = None
             f_list = data.get('adaptiveFormats', []) if fmt == 'mp3' else data.get('formats', [])
             for f in f_list:
-                if fmt == 'mp3' and 'audio' in f.get('mimeType', ''): link = f.get('url'); break
-                if fmt == 'mp4' and 'video' in f.get('mimeType', ''): link = f.get('url'); break
-            return jsonify({"url": link or data.get('link')})
+                if fmt == 'mp3' and 'audio' in f.get('mimeType', ''): 
+                    link = f.get('url')
+                    break
+                if fmt == 'mp4' and 'video' in f.get('mimeType', '') and f.get('url'): 
+                    link = f.get('url')
+                    break
+            
+            # Si el método 1 falló, probamos el link directo que a veces viene en 'link'
+            final_url = link or data.get('link')
+            if final_url:
+                return jsonify({"url": final_url})
+
+        # MÉTODO 2: Multiplataforma (TikTok, FB, etc) y respaldo de YT
+        headers["x-rapidapi-host"] = "download-all-in-one-lite.p.rapidapi.com"
+        r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", params={"url": url}, headers=headers, proxies=get_proxy(), timeout=20)
+        data = r.json()
+        medias = data.get("medias", [])
+        
+        target = None
+        for m in medias:
+            m_type = str(m.get('type')).lower()
+            if fmt == 'mp3' and 'audio' in m_type: 
+                target = m.get('url')
+                break
+            if fmt == 'mp4' and 'video' in m_type: 
+                target = m.get('url')
+                break
+        
+        if not target and medias:
+            target = medias[0].get('url')
+            
+        if target:
+            return jsonify({"url": target})
         else:
-            headers["x-rapidapi-host"] = "download-all-in-one-lite.p.rapidapi.com"
-            r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", params={"url": url}, headers=headers, proxies=get_proxy(), timeout=20)
-            data = r.json()
-            medias = data.get("medias", [])
-            target = None
-            for m in medias:
-                m_type = str(m.get('type')).lower()
-                if fmt == 'mp3' and 'audio' in m_type: target = m.get('url'); break
-                if fmt == 'mp4' and 'video' in m_type: target = m.get('url'); break
-            return jsonify({"url": target or medias[0].get('url')})
-    except: return jsonify({"error": "Error"}), 500
+            return jsonify({"error": "No se encontró un link de descarga válido"}), 404
+
+    except Exception as e:
+        print(f"Error en api_down: {e}")
+        return jsonify({"error": "Error interno del servidor"}), 500
+
 
 @app.route('/ads.txt')
 def ads_txt():
