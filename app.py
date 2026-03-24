@@ -8,24 +8,13 @@ CORS(app)
 
 # --- CONFIGURACIÓN DE PROXIES (WEBSHARE ROTATIVO) ---
 def get_ydl_opts():
-    user = "ksvyuzxs-rotate"
-    pw = "r148qqniiwdz"
-    proxy = f"http://{user}:{pw}@p.webshare.io:80"
-    
     return {
-        'proxy': proxy,
+        'proxy': f"http://ksvyuzxs-rotate:r148qqniiwdz@p.webshare.io:80",
+        'cookiefile': 'cookies.txt',  # <--- ESTA LÍNEA ES LA MAGIA
         'quiet': True,
-        'no_warnings': True,
-        # TRUCO MAESTRO: Forzamos el cliente de Android para saltar el bloqueo de 403
         'format': 'best',
-        'nocheckcertificate': True,
-        'user_agent': 'com.google.android.youtube/19.05.36 (Linux; U; Android 11; en_US) Screenscale/3.0',
-        'socket_timeout': 30,
-        'no_cookies': True,
-        # Agregamos estos argumentos para confundir al servidor de Google
-        'referer': 'https://www.google.com/',
-        'add_header': ['Accept-Language: en-US,en;q=0.9'],
-        'extractor_args': {'youtube': {'player_client': ['android']}}
+        'user_agent': 'com.google.android.youtube/19.05.36 (Linux; U; Android 11; en_US)',
+        'nocheckcertificate': True
     }
 
 # --- DISEÑO DE LA PÁGINA (HTML + CSS + JS) ---
