@@ -6,123 +6,98 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# --- CONFIGURACIÓN DE PROXIES (WEBSHARE ROTATIVO) ---
+# --- CONFIGURACIÓN DE PROXIES Y COOKIES ---
 def get_ydl_opts():
-    return {
-        'proxy': f"http://ksvyuzxs-rotate:r148qqniiwdz@p.webshare.io:80",
-        'cookiefile': 'cookies.txt',  # <--- ESTA LÍNEA ES LA MAGIA
+    user = "ksvyuzxs-rotate"
+    pw = "r148qqniiwdz"
+    proxy = f"http://{user}:{pw}@p.webshare.io:80"
+    
+    # Buscamos el archivo de cookies que subiste
+    cookie_path = 'cookies.txt'
+    
+    opts = {
+        'proxy': proxy,
         'quiet': True,
+        'no_warnings': True,
         'format': 'best',
-        'user_agent': 'com.google.android.youtube/19.05.36 (Linux; U; Android 11; en_US)',
-        'nocheckcertificate': True
+        'nocheckcertificate': True,
+        # Engañamos a YT como si fuera un usuario real de Android
+        'user_agent': 'Mozilla/5.0 (Linux; Android 11; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Mobile Safari/537.36',
+        'socket_timeout': 30,
+        'extract_flat': False,
     }
 
-# --- DISEÑO DE LA PÁGINA (HTML + CSS + JS) ---
-HTML_TEMPLATE = '''
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motor Pro 🚀 | Cochabamba 🇧🇴</title>
-    <style>
-        :root { --red: #ff0000; --dark: #0a0a0a; --gray: #1a1a1a; --text: #eee; }
-        body { background: var(--dark); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 40px 20px; text-align: center; }
-        .card { background: var(--gray); padding: 35px; border-radius: 25px; border: 1px solid #333; max-width: 450px; margin: auto; box-shadow: 0 15px 50px rgba(0,0,0,0.7); }
-        h1 { color: var(--red); font-size: 26px; margin-bottom: 5px; }
-        p.sub { font-size: 11px; color: #666; margin-bottom: 25px; }
-        input { width: 100%; padding: 18px; border-radius: 12px; border: 1px solid #444; background: #222; color: #fff; box-sizing: border-box; font-size: 16px; outline: none; }
-        input:focus { border-color: var(--red); }
-        button { width: 100%; padding: 18px; background: var(--red); color: #fff; border: none; border-radius: 12px; margin-top: 20px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #cc0000; transform: scale(1.02); }
-        button:disabled { background: #444; cursor: not-allowed; }
-        #result { margin-top: 30px; min-height: 60px; font-weight: bold; }
-        .dl-link { display: block; background: #00aa00; color: #fff; padding: 18px; border-radius: 12px; text-decoration: none; margin-top: 10px; font-size: 18px; box-shadow: 0 5px 15px rgba(0,170,0,0.3); }
-        footer { margin-top: 40px; font-size: 12px; color: #444; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h1>🚀 MOTOR PRO</h1>
-        <p class="sub">Youtube • Facebook • Instagram • TikTok</p>
-        
-        <input type="text" id="videoUrl" placeholder="Pega el enlace aquí..." autocomplete="off">
-        
-        <button id="mainBtn" onclick="procesarVideo()">PROCESAR VIDEO</button>
-        
-        <div id="result"></div>
-    </div>
+    # SI EL ARCHIVO EXISTE, LO USAMOS (Esto es lo que falta)
+    if os.path.exists(cookie_path):
+        opts['cookiefile'] = cookie_path
+        print("✅ Usando archivo cookies.txt detectado.")
+    else:
+        print("⚠️ No se encontró cookies.txt, intentando sin cookies...")
 
-    <footer>© 2026 Motor de Descarga Pro - Cochabamba 🇧🇴</footer>
-
-    <script>
-        async function procesarVideo() {
-            const urlInput = document.getElementById('videoUrl');
-            const resDiv = document.getElementById('result');
-            const btn = document.getElementById('mainBtn');
-            const url = urlInput.value.trim();
-
-            if (!url || url.includes('import os')) {
-                alert("Por favor, pega un enlace válido de video.");
-                return;
-            }
-
-            btn.disabled = true;
-            resDiv.innerHTML = "⏳ Saltando bloqueos de seguridad...<br><small style='color:#888'>Cambiando IP residencial...</small>";
-
-            try {
-                const response = await fetch('/api/info?url=' + encodeURIComponent(url));
-                const data = await response.json();
-
-                if (data.success) {
-                    resDiv.innerHTML = `
-                        <span style="color:lime">✅ ¡VÍDEO DETECTADO!</span><br>
-                        <small style="color:#aaa">${data.title.substring(0, 40)}...</small>
-                        <a href="${data.url}" class="dl-link" target="_blank">DESCARGAR AHORA</a>
-                    `;
-                } else {
-                    resDiv.innerHTML = `
-                        <span style="color:red">❌ YouTube bloqueó la IP actual.</span><br>
-                        <button onclick="procesarVideo()" style="background:#333; padding:8px; font-size:12px; width:auto">REINTENTAR NUEVA IP</button>
-                    `;
-                }
-            } catch (error) {
-                resDiv.innerHTML = "<span style='color:red'>❌ Error de conexión con el servidor.</span>";
-            } finally {
-                btn.disabled = false;
-            }
-        }
-    </script>
-</body>
-</html>
-'''
+    return opts
 
 @app.route('/')
 def home():
-    return render_template_string(HTML_TEMPLATE)
+    return render_template_string('''
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Motor Pro 🚀 | Cochabamba</title>
+        <style>
+            body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding: 40px 20px; }
+            .card { background: #111; padding: 35px; border-radius: 25px; border: 1px solid #333; max-width: 450px; margin: auto; }
+            h1 { color: #ff0000; font-size: 26px; }
+            input { width: 100%; padding: 18px; border-radius: 12px; border: 1px solid #444; background: #222; color: #fff; box-sizing: border-box; font-size: 16px; margin-bottom: 20px; }
+            button { width: 100%; padding: 18px; background: #ff0000; color: #fff; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+            #res { margin-top: 30px; font-weight: bold; min-height: 60px; }
+            .dl-link { display: block; background: #00aa00; color: #fff; padding: 18px; border-radius: 12px; text-decoration: none; margin-top: 10px; font-size: 18px; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h1>🚀 MOTOR PRO</h1>
+            <p style="font-size:11px; color:#555">Sistema con Cookies y Proxy Residencial Activo</p>
+            <input type="text" id="url" placeholder="Pega el link aquí..." autocomplete="off">
+            <button id="btn" onclick="descargar()">PROCESAR VIDEO</button>
+            <div id="res"></div>
+        </div>
+        <script>
+            async function descargar() {
+                const u = document.getElementById('url').value;
+                const r = document.getElementById('res');
+                const b = document.getElementById('btn');
+                if(!u) return;
+                b.disabled = true; r.innerHTML = "⏳ Validando sesión con YouTube...";
+                try {
+                    const resp = await fetch('/api/info?url=' + encodeURIComponent(u));
+                    const data = await resp.json();
+                    if(data.success) {
+                        r.innerHTML = '✅ LISTO!<br><a class="dl-link" href="' + data.url + '" target="_blank">DESCARGAR AHORA</a>';
+                    } else { 
+                        r.innerHTML = "❌ YouTube sigue bloqueando la IP.<br><small>Espera 5 segundos y dale a 'PROCESAR' de nuevo.</small>"; 
+                    }
+                } catch(e) { r.innerText = "❌ Error de servidor."; }
+                b.disabled = false;
+            }
+        </script>
+    </body>
+    </html>
+    ''')
 
 @app.route('/api/info')
 def info():
-    video_url = request.args.get('url')
-    if not video_url:
-        return jsonify({"success": False, "error": "No URL provided"})
-    
+    u = request.args.get('url')
+    if not u: return jsonify({"success": False})
     try:
-        # Intentamos extraer la información usando yt-dlp con los proxies residenciales
         with yt_dlp.YoutubeDL(get_ydl_opts()) as ydl:
-            info_data = ydl.extract_info(video_url, download=False)
-            if info_data:
-                return jsonify({
-                    "success": True,
-                    "url": info_data.get('url'),
-                    "title": info_data.get('title', 'Video detectado')
-                })
+            i = ydl.extract_info(u, download=False)
+            return jsonify({"success": True, "url": i.get('url'), "title": i.get('title')})
     except Exception as e:
-        print(f"DEBUG ERROR: {str(e)}")
-    
-    return jsonify({"success": False})
+        print(f"ERROR: {e}")
+        return jsonify({"success": False})
 
 if __name__ == "__main__":
-    # Railway asigna el puerto automáticamente
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
