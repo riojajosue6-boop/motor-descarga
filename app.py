@@ -7,12 +7,10 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# --- CONFIGURACIÓN DE PROXIES USA ---
 def get_ydl_opts():
-    user = "ksvyuzxs-us-rotate" 
+    user = "ksvyuzxs-us-rotate"
     pw = "r148qqniiwdz"
     proxy = f"http://{user}:{pw}@p.webshare.io:80"
-    
     return {
         'proxy': proxy,
         'quiet': True,
@@ -23,7 +21,6 @@ def get_ydl_opts():
         'socket_timeout': 30
     }
 
-# --- INTERFAZ PREMIUM ---
 HTML_PRO = '''
 <!DOCTYPE html>
 <html lang="es">
@@ -115,7 +112,7 @@ HTML_PRO = '''
 '''
 
 @app.route('/')
-def home(): 
+def home():
     return render_template_string(HTML_PRO)
 
 @app.route('/api/info')
@@ -127,20 +124,18 @@ def info():
         with yt_dlp.YoutubeDL(get_ydl_opts()) as ydl:
             i = ydl.extract_info(u, download=False)
             return jsonify({"success": True, "url": i.get('url')})
-    except: 
+    except:
         return jsonify({"success": False})
 
 @app.route('/descargar_archivo')
 def descargar_archivo():
     video_url = request.args.get('url')
     if not video_url: return "Error"
-    
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         'Referer': 'https://www.tiktok.com/',
         'Accept': '*/*'
     }
-    
     try:
         def generate():
             with requests.get(video_url, stream=True, headers=headers, timeout=45) as r:
@@ -148,7 +143,6 @@ def descargar_archivo():
                 for chunk in r.iter_content(chunk_size=1024*1024):
                     if chunk:
                         yield chunk
-
         return Response(stream_with_context(generate()), 
                         content_type="video/mp4",
                         headers={"Content-Disposition": "attachment; filename=video_motor_pro.mp4"})
