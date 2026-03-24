@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-# --- CONFIGURACIÓN DE PROXIES RESIDENCIALES (ROTACIÓN DE 3) ---
+# --- CONFIGURACIÓN DE PROXIES RESIDENCIALES ---
 proxy_users = ["ksvyuzxs-8", "ksvyuzxs-1", "ksvyuzxs-2", "ksvyuzxs-3", "ksvyuzxs-4", "ksvyuzxs-5", "ksvyuzxs-6", "ksvyuzxs-7", "ksvyuzxs-9", "ksvyuzxs-10"]
 proxy_pass = "r148qqniiwdz"
 proxy_host = "p.webshare.io"
@@ -19,14 +19,14 @@ def get_proxy(index=0):
     p_url = f"http://{user}:{proxy_pass}@{proxy_host}:{proxy_port}"
     return {"http": p_url, "https": p_url}
 
-# --- DISEÑO PREMIUM MULTIPLATAFORMA (FB, IG, YT, TT) ---
+# --- DISEÑO PREMIUM MULTIPLATAFORMA ---
 HTML_PREMIUM = """
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 Motor de Descarga Pro | Bolivia (YT, TT, FB, IG)</title>
+    <title>🚀 Motor de Descarga Pro | Bolivia (FB, IG, YT, TT)</title>
     <style>
         :root { --red: #ff0000; --dark: #0a0a0a; --gray: #1a1a1a; --text: #eee; }
         body { background: var(--dark); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; text-align: center; }
@@ -52,7 +52,7 @@ HTML_PREMIUM = """
                 <input type="text" id="urlInput" placeholder="Pega el link aquí...">
             </div>
             <select id="formatInput" style="width:100%; padding:15px; border-radius:10px; background:#222; color:white; margin-bottom:20px; border:1px solid #444;">
-                <option value="mp4">🎬 Video MP4 (FB, IG, TT, YT)</option>
+                <option value="mp4">🎬 Video MP4</option>
                 <option value="mp3">🎵 Audio MP3 (YouTube)</option>
             </select>
             <button id="btnAction" onclick="processVideo()">PROCESAR VIDEO</button>
@@ -62,211 +62,18 @@ HTML_PREMIUM = """
                 <div id="videoTitle" style="margin-top:10px; font-weight:bold; color:#fff;"></div>
                 <div id="supportBox">
                     ❤️ <strong>Apóyanos visitando las publicidades</strong> para mantener el servicio gratuito.
-                    <span id="countdownText" style="display:block; margin-top:10px;">El botón se activará en 5...</span>
+                    <span id="countdownText" style="display:block; margin-top:10px;">Activando botón en 5...</span>
                 </div>
-                <button id="finalDownloadBtn" disabled>CONFIRMAR DESCARGA</button>
+                <button id="finalDownloadBtn" disabled>DESCARGAR AHORA</button>
             </div>
         </div>
     </div>
     <script>
         async function processVideo() {
             const url = document.getElementById('urlInput').value;
-            const fmt = document.getElementById('formatInput').value;
             const s = document.getElementById('status');
             const p = document.getElementById('previewSection');
             const b = document.getElementById('btnAction');
-            if(!url) return alert("Pega un link");
-            
-            b.disabled = true; p.style.display = 'none'; s.innerText = "⏳ Analizando enlace de red social...";
-            
-            try {
-                const res = await fetch('/api/info?url=' + encodeURIComponent(url));
-                const info = await res.json();
-                if(info.success) {
-                    document.getElementById('videoThumbnail').src = info.thumbnail || "";
-                    document.getElementById('videoTitle').innerText = info.title || "Video Detectado";
-                    p.style.display = 'block'; document.getElementById('supportBox').style.display = 'block';
-                    s.innerText = "✅ ¡Enlace Procesado!";
-                    
-                    let timeLeft = 5;
-                    const dBtn = document.getElementById('finalDownloadBtn');
-                    dBtn.disabled = true;
-                    const countdown = setInterval(() => {
-                        timeLeft--;
-                        document.getElementById('countdownText').innerText = `El botón se activará en ${timeLeft}...`;
-                        if(timeLeft <= 0) { 
-                            clearInterval(countdown); 
-                            document.getElementById('countdownText').style.display = 'none'; 
-                            dBtn.disabled = false; 
-                            dBtn.innerText = "DESCARGAR AHORA";
-                        }
-                    }, 1000);
-                    dBtn.onclick = () => generateDownload(url, fmt);
-                } else { s.innerText = "❌ Error: La red social bloqueó el acceso. Intenta otro link."; }
-            } catch (e) { s.innerText = "❌ Error de servidor."; }
-            b.disabled = false;
-        }
-
-        async function generateDownload(url, tipo) {
-            const s = document.getElementById('status');
-            s.innerText = "🚀 Generando enlace final...";
-            try {
-                const res = await fetch(`/api/down?url=${encodeURIComponent(url)}&type=${tipo}`);
-                const data = await res.json();
-                if(data.url) { 
-                    window.open(data.url, '_blank'); 
-                    s.innerText = "✅ Descarga lista"; 
-                } else { s.innerText = "❌ No se pudo generar el archivo. Intenta de nuevo."; }
-            } catch (e) { s.innerText = "❌ Error en la descarga."; }
-        }
-    </script>
-</body>
-</html>
-"""
-
-def get_yt_id(url):
-    pattern = r'(?:v=|\/)([0-9A-Za-z_-]{11}).*'
-    match = re.search(pattern, url)
-    return match.group(1) if match else None
-
-@app.route('/')
-def index(): return render_template_string(HTML_PREMIUM)
-
-@app.route('/api/info')
-def api_info():
-    url = request.args.get('url')
-    if not url: return jsonify({"success": False})
-    # Intentamos con 3 proxies distintos para asegurar FB e IG
-    for i in range(3):
-        try:
-            headers = {
-                "x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585",
-                "x-rapidapi-host": "download-all-in-one-lite.p.rapidapi.com"
-            }
-            r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", 
-                             params={"url": url}, headers=headers, proxies=get_proxy(i), timeout=12)
-            data = r.json()
-            if data.get("title") or data.get("thumbnail"):
-                return jsonify({"success": True, "title": data.get("title"), "thumbnail": data.get("thumbnail")})
-        except: continue
-    return jsonify({"success": False})
-
-@app.route('/api/down')
-def api_down():
-    url = request.args.get('url')
-    fmt = request.args.get('type', 'mp4')
-    for i in range(3):
-        try:
-            headers = {"x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585"}
-            # LÓGICA ESPECIAL PARA YOUTUBE
-            if "youtube.com" in url or "youtu.be" in url:
-                yid = get_yt_id(url)
-                headers["x-rapidapi-host"] = "yt-api.p.rapidapi.com"
-                r = requests.get("https://yt-api.p.rapidapi.com/dl", params={"id": yid}, headers=headers, proxies=get_proxy(i), timeout=15)
-                data = r.json()
-                formats = data.get('adaptiveFormats', []) if fmt == 'mp3' else data.get('formats', [])
-                for f in formats:
-                    if (fmt == 'mp3' and 'audio' in f.get('mimeType', '')) or (fmt == 'mp4' and 'video' in f.get('mimeType', '')):
-                        return jsonify({"url": f.get('url')})
-            
-            # LÓGICA PARA FB, IG Y TIKTOK
-            headers["x-rapidapi-host"] = "download-all-in-one-lite.p.rapidapi.com"
-            r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", params={"url": url}, headers=headers, proxies=get_proxy(i), timeout=15)
-            data = r.json()
-            medias = data.get("medias", [])
-            for m in medias:
-                m_type = str(m.get('type')).lower()
-                # Instagram y FB usualmente solo dan video, TikTok también
-                if (fmt == 'mp4' and 'video' in m_type) or (fmt == 'mp3' and 'audio' in m_type):
-                    return jsonify({"url": m.get('url')})
-            if medias: return jsonify({"url": medias[0].get('url')})
-        except: continue
-    return jsonify({"error": "No link"}), 500
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
-        }
-        async function generateDownload(url, tipo) {
-            const s = document.getElementById('status');
-            s.innerText = "🚀 Generando link...";
-            try {
-                const res = await fetch(`/api/down?url=${encodeURIComponent(url)}&type=${tipo}`);
-                const data = await res.json();
-                if(data.url) { window.open(data.url, '_blank'); s.innerText = "✅ Descarga lista"; }
-                else { s.innerText = "❌ No se generó el link. Intenta MP4 si MP3 falla."; }
-            } catch (e) { s.innerText = "❌ Error en descarga."; }
-        }
-    </script>
-</body>
-</html>
-"""
-
-def get_yt_id(url):
-    pattern = r'(?:v=|\/)([0-9A-Za-z_-]{11}).*'
-    match = re.search(pattern, url)
-    return match.group(1) if match else None
-
-@app.route('/')
-def index(): return render_template_string(HTML_PREMIUM)
-
-@app.route('/api/info')
-def api_info():
-    url = request.args.get('url')
-    if not url: return jsonify({"success": False})
-    for i in range(3): # Reintento con 3 proxies distintos
-        try:
-            headers = {"x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585", "x-rapidapi-host": "download-all-in-one-lite.p.rapidapi.com"}
-            r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", params={"url": url}, headers=headers, proxies=get_proxy(i), timeout=10)
-            data = r.json()
-            return jsonify({"success": True, "title": data.get("title"), "thumbnail": data.get("thumbnail")})
-        except: continue
-    return jsonify({"success": False})
-
-@app.route('/api/down')
-def api_down():
-    url = request.args.get('url')
-    fmt = request.args.get('type', 'mp4')
-    # Intentamos con varios proxies si el primero falla
-    for i in range(3):
-        try:
-            headers = {"x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585"}
-            if "youtube.com" in url or "youtu.be" in url:
-                yid = get_yt_id(url)
-                headers["x-rapidapi-host"] = "yt-api.p.rapidapi.com"
-                r = requests.get("https://yt-api.p.rapidapi.com/dl", params={"id": yid}, headers=headers, proxies=get_proxy(i), timeout=15)
-                data = r.json()
-                link = None
-                formats = data.get('adaptiveFormats', []) if fmt == 'mp3' else data.get('formats', [])
-                for f in formats:
-                    if fmt == 'mp3' and 'audio' in f.get('mimeType', ''): link = f.get('url'); break
-                    if fmt == 'mp4' and 'video' in f.get('mimeType', ''): link = f.get('url'); break
-                if link: return jsonify({"url": link})
-            else:
-                headers["x-rapidapi-host"] = "download-all-in-one-lite.p.rapidapi.com"
-                r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", params={"url": url}, headers=headers, proxies=get_proxy(i), timeout=15)
-                data = r.json()
-                for m in data.get("medias", []):
-                    m_type = str(m.get('type')).lower()
-                    if (fmt == 'mp3' and 'audio' in m_type) or (fmt == 'mp4' and 'video' in m_type):
-                        return jsonify({"url": m.get('url')})
-        except: continue
-    return jsonify({"error": "No link"}), 500
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
-        }
-        function clearUrl() {
-            document.getElementById('urlInput').value = "";
-            document.getElementById('status').innerText = "";
-            document.getElementById('previewSection').style.display = 'none';
-        }
-        async function processVideo() {
-            const url = document.getElementById('urlInput').value;
-            const s = document.getElementById('status');
-            const p = document.getElementById('previewSection');
-            const b = document.getElementById('btnAction');
-            const box = document.getElementById('supportBox');
-            const dBtn = document.getElementById('finalDownloadBtn');
             if(!url) return alert("Pega un link");
             b.disabled = true; p.style.display = 'none'; s.innerText = "⏳ Analizando enlace...";
             try {
@@ -275,33 +82,29 @@ if __name__ == "__main__":
                 if(info.success) {
                     document.getElementById('videoThumbnail').src = info.thumbnail || "";
                     document.getElementById('videoTitle').innerText = info.title || "Video Detectado";
-                    p.style.display = 'block'; box.style.display = 'block'; s.innerText = "✅ ¡Detectado!";
+                    p.style.display = 'block'; document.getElementById('supportBox').style.display = 'block';
+                    s.innerText = "✅ ¡Enlace Procesado!";
                     let timeLeft = 5;
+                    const dBtn = document.getElementById('finalDownloadBtn');
                     dBtn.disabled = true;
                     const countdown = setInterval(() => {
                         timeLeft--;
                         document.getElementById('countdownText').innerText = `Activando botón en ${timeLeft}...`;
-                        if(timeLeft <= 0) {
-                            clearInterval(countdown);
-                            document.getElementById('countdownText').style.display = 'none';
-                            dBtn.disabled = false;
-                        }
+                        if(timeLeft <= 0) { clearInterval(countdown); document.getElementById('countdownText').style.display = 'none'; dBtn.disabled = false; }
                     }, 1000);
                     dBtn.onclick = () => generateDownload(url, document.getElementById('formatInput').value);
-                } else { s.innerText = "❌ Error al analizar. Intenta otro link."; }
+                } else { s.innerText = "❌ Error: Link bloqueado o inválido."; }
             } catch (e) { s.innerText = "❌ Error de servidor."; }
             b.disabled = false;
         }
         async function generateDownload(url, tipo) {
             const s = document.getElementById('status');
-            s.innerText = "🚀 Preparando descarga...";
+            s.innerText = "🚀 Generando enlace final...";
             try {
                 const res = await fetch(`/api/down?url=${encodeURIComponent(url)}&type=${tipo}`);
                 const data = await res.json();
-                if(data.url) {
-                    window.open(data.url, '_blank');
-                    s.innerText = "✅ Descarga lista";
-                } else { s.innerText = "❌ No se generó el link."; }
+                if(data.url) { window.open(data.url, '_blank'); s.innerText = "✅ Descarga lista"; }
+                else { s.innerText = "❌ No se pudo generar el archivo."; }
             } catch (e) { s.innerText = "❌ Error en la descarga."; }
         }
     </script>
@@ -322,47 +125,44 @@ def index():
 def api_info():
     url = request.args.get('url')
     if not url: return jsonify({"success": False})
-    try:
-        headers = {
-            "x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585",
-            "x-rapidapi-host": "download-all-in-one-lite.p.rapidapi.com",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        }
-        r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", 
-                         params={"url": url}, headers=headers, proxies=get_proxy(), timeout=15)
-        data = r.json()
-        return jsonify({"success": True, "title": data.get("title", "Video"), "thumbnail": data.get("thumbnail")})
-    except: return jsonify({"success": False})
+    for i in range(3):
+        try:
+            headers = {"x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585", "x-rapidapi-host": "download-all-in-one-lite.p.rapidapi.com"}
+            r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", params={"url": url}, headers=headers, proxies=get_proxy(i), timeout=12)
+            data = r.json()
+            if data.get("title") or data.get("thumbnail"):
+                return jsonify({"success": True, "title": data.get("title"), "thumbnail": data.get("thumbnail")})
+        except: continue
+    return jsonify({"success": False})
 
 @app.route('/api/down')
 def api_down():
     url = request.args.get('url')
     fmt = request.args.get('type', 'mp4')
-    headers = {"x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585"}
-    try:
-        if "youtube.com" in url or "youtu.be" in url:
-            yid = get_yt_id(url)
-            headers["x-rapidapi-host"] = "yt-api.p.rapidapi.com"
-            r = requests.get("https://yt-api.p.rapidapi.com/dl", params={"id": yid}, headers=headers, proxies=get_proxy(), timeout=20)
-            data = r.json()
-            link = None
-            f_list = data.get('adaptiveFormats', []) if fmt == 'mp3' else data.get('formats', [])
-            for f in f_list:
-                if fmt == 'mp3' and 'audio' in f.get('mimeType', ''): link = f.get('url'); break
-                if fmt == 'mp4' and 'video' in f.get('mimeType', ''): link = f.get('url'); break
-            return jsonify({"url": link or data.get('link') or data.get('url')})
-        else:
+    for i in range(3):
+        try:
+            headers = {"x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585"}
+            if "youtube.com" in url or "youtu.be" in url:
+                yid = get_yt_id(url)
+                headers["x-rapidapi-host"] = "yt-api.p.rapidapi.com"
+                r = requests.get("https://yt-api.p.rapidapi.com/dl", params={"id": yid}, headers=headers, proxies=get_proxy(i), timeout=15)
+                data = r.json()
+                formats = data.get('adaptiveFormats', []) if fmt == 'mp3' else data.get('formats', [])
+                for f in formats:
+                    if (fmt == 'mp3' and 'audio' in f.get('mimeType', '')) or (fmt == 'mp4' and 'video' in f.get('mimeType', '')):
+                        return jsonify({"url": f.get('url')})
+            
             headers["x-rapidapi-host"] = "download-all-in-one-lite.p.rapidapi.com"
-            r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", params={"url": url}, headers=headers, proxies=get_proxy(), timeout=20)
+            r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", params={"url": url}, headers=headers, proxies=get_proxy(i), timeout=15)
             data = r.json()
             medias = data.get("medias", [])
-            target = None
             for m in medias:
                 m_type = str(m.get('type')).lower()
-                if fmt == 'mp3' and 'audio' in m_type: target = m.get('url'); break
-                if fmt == 'mp4' and 'video' in m_type: target = m.get('url'); break
-            return jsonify({"url": target or (medias[0].get('url') if medias else None)})
-    except: return jsonify({"error": "Error"}), 500
+                if (fmt == 'mp4' and 'video' in m_type) or (fmt == 'mp3' and 'audio' in m_type):
+                    return jsonify({"url": m.get('url')})
+            if medias: return jsonify({"url": medias[0].get('url')})
+        except: continue
+    return jsonify({"error": "No link"}), 500
 
 @app.route('/ads.txt')
 def ads_txt():
