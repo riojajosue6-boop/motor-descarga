@@ -135,7 +135,6 @@ def descargar_archivo():
     video_url = request.args.get('url')
     if not video_url: return "Error"
     
-    # DISFRAZ COMPLETO - AQUÍ ESTABA EL ERROR DE LAS COMILLAS
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         'Referer': 'https://www.tiktok.com/',
@@ -166,6 +165,5 @@ def terminos(): return "Uso personal únicamente."
 def ads_txt(): return Response("google.com, pub-8532381032470048, DIRECT, f08c47fec0942fa0", mimetype='text/plain')
 
 if __name__ == "__main__":
-    # CONFIGURACIÓN CRUCIAL PARA RAILWAY
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
