@@ -143,17 +143,29 @@ def info():
 @app.route('/descargar_archivo')
 def descargar_archivo():
     video_url = request.args.get('url')
-    if not video_url: return "Error"
+    if not video_url: return "Error: URL no válida"
     
-    def generate():
-        # Railway descarga el video y te lo manda a ti, saltando el bloqueo de IP
-        r = requests.get(video_url, stream=True, headers={'User-Agent': 'Mozilla/5.0'})
-        for chunk in r.iter_content(chunk_size=1024*1024):
-            yield chunk
+    # Identidad completa para que TikTok no sospeche
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Referer': 'https://www.tiktok.com/',
+        'Accept': '*/*'
+    }
+    
+    try:
+        def generate():
+            # Usamos una sesión para mantener la conexión estable
+            with requests.get(video_url, stream=True, headers=headers, timeout=30) as r:
+                r.raise_for_status() # Si hay error 403, saltará al 'except'
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        yield chunk
 
-    return Response(stream_with_context(generate()), 
-                    content_type="video/mp4",
-                    headers={"Content-Disposition": "attachment; filename=video_motor_pro.mp4"})
+        return Response(stream_with_context(generate()), 
+                        content_type="video/mp4",
+                        headers={"Content-Disposition": "attachment; filename=video_motor_pro.mp4"})
+    except Exception as e:
+        return f"Error al procesar la descarga: {str(e)}"
 
 @app.route('/privacidad')
 def privacidad(): return "Privacidad Protegida."
