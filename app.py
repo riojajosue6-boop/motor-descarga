@@ -1,6 +1,7 @@
 import os
 import requests
 import re
+import random
 from flask import Flask, request, jsonify, render_template_string, Response
 from flask_cors import CORS
 
@@ -8,7 +9,7 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
-# --- CONFIGURACIÓN DE PROXIES RESIDENCIALES ---
+# --- CONFIGURACIÓN DE PROXIES ---
 proxy_users = ["ksvyuzxs-8", "ksvyuzxs-1", "ksvyuzxs-2", "ksvyuzxs-3", "ksvyuzxs-4", "ksvyuzxs-5", "ksvyuzxs-6", "ksvyuzxs-7", "ksvyuzxs-9", "ksvyuzxs-10"]
 proxy_pass = "r148qqniiwdz"
 proxy_host = "p.webshare.io"
@@ -19,17 +20,20 @@ def get_proxy(index=0):
     p_url = f"http://{user}:{proxy_pass}@{proxy_host}:{proxy_port}"
     return {"http": p_url, "https": p_url}
 
-# --- DISEÑO PREMIUM MULTIPLATAFORMA ---
+# --- DISEÑO PREMIUM (MANTENIENDO TUS TÉRMINOS Y PRIVACIDAD) ---
 HTML_PREMIUM = """
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 Motor de Descarga Pro | Bolivia (FB, IG, YT, TT)</title>
+    <title>🚀 Motor de Descarga Pro | Bolivia</title>
     <style>
         :root { --red: #ff0000; --dark: #0a0a0a; --gray: #1a1a1a; --text: #eee; }
         body { background: var(--dark); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; text-align: center; }
+        nav { background: #000; padding: 15px; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 100; }
+        nav a { color: #888; margin: 0 15px; text-decoration: none; font-size: 14px; cursor: pointer; transition: 0.3s; }
+        nav a:hover { color: var(--red); }
         .container { padding: 20px; max-width: 800px; margin: 0 auto; }
         .main-card { background: var(--gray); padding: 40px; border-radius: 25px; border: 1px solid #333; margin: 10px auto; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
         h1 { color: var(--red); font-size: 32px; margin-bottom: 20px; }
@@ -37,45 +41,68 @@ HTML_PREMIUM = """
         input { width: 100%; padding: 18px 50px 18px 18px; border-radius: 12px; border: 1px solid #333; background: #222; color: #fff; font-size: 16px; box-sizing: border-box; outline: none; }
         #btnAction { width: 100%; padding: 18px; background: var(--red); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 18px; cursor: pointer; }
         #previewSection { display: none; margin-top: 30px; border-top: 1px solid #333; padding-top: 20px; }
+        #videoThumbnail { width: 100%; max-width: 400px; border-radius: 15px; border: 1px solid #444; }
         #supportBox { display: none; background: #1a2a1a; color: #99ff99; border: 1px solid #00aa00; padding: 20px; border-radius: 15px; margin: 20px 0; font-size: 14px; }
         #finalDownloadBtn { width: 100%; padding: 15px; background: #00aa00; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 15px; }
         #finalDownloadBtn:disabled { background: #333; color: #777; cursor: not-allowed; opacity: 0.6; }
+        .legal-content { display: none; text-align: left; background: #111; padding: 30px; border-radius: 15px; line-height: 1.6; color: #bbb; margin-top: 20px; border: 1px solid #222; }
         footer { padding: 40px; color: #444; font-size: 12px; }
     </style>
 </head>
 <body>
+    <nav>
+        <a onclick="showSection('home')">Inicio</a>
+        <a onclick="showSection('privacy')">Privacidad</a>
+        <a onclick="showSection('terms')">Términos</a>
+    </nav>
     <div class="container">
-        <div class="main-card">
-            <h1>🚀 MOTOR DE DESCARGA</h1>
-            <p style="color:#888; font-size:14px;">YouTube • TikTok • Facebook • Instagram</p>
-            <div class="input-group">
-                <input type="text" id="urlInput" placeholder="Pega el link aquí...">
-            </div>
-            <select id="formatInput" style="width:100%; padding:15px; border-radius:10px; background:#222; color:white; margin-bottom:20px; border:1px solid #444;">
-                <option value="mp4">🎬 Video MP4</option>
-                <option value="mp3">🎵 Audio MP3 (YouTube)</option>
-            </select>
-            <button id="btnAction" onclick="processVideo()">PROCESAR VIDEO</button>
-            <div id="status" style="margin-top:20px; font-weight:bold;"></div>
-            <div id="previewSection">
-                <img id="videoThumbnail" src="" style="width:100%; max-width:400px; border-radius:15px;">
-                <div id="videoTitle" style="margin-top:10px; font-weight:bold; color:#fff;"></div>
-                <div id="supportBox">
-                    ❤️ <strong>Apóyanos visitando las publicidades</strong> para mantener el servicio gratuito.
-                    <span id="countdownText" style="display:block; margin-top:10px;">Activando botón en 5...</span>
+        <div id="home-sec">
+            <div class="main-card">
+                <h1>🚀 MOTOR DE DESCARGA</h1>
+                <p style="color:#666; font-size:12px; margin-bottom:15px;">YT • TT • FB • IG</p>
+                <div class="input-group">
+                    <input type="text" id="urlInput" placeholder="Pega el enlace de video aquí...">
                 </div>
-                <button id="finalDownloadBtn" disabled>DESCARGAR AHORA</button>
+                <select id="formatInput" style="width:100%; padding:15px; border-radius:10px; background:#222; color:white; border:1px solid #444; margin-bottom:20px;">
+                    <option value="mp4">🎬 Video MP4</option>
+                    <option value="mp3">🎵 Audio MP3</option>
+                </select>
+                <button id="btnAction" onclick="processVideo()">PROCESAR VIDEO</button>
+                <div id="status" style="margin-top:20px; font-weight:bold;"></div>
+                <div id="previewSection">
+                    <img id="videoThumbnail" src="">
+                    <div id="videoTitle" style="margin-top:10px; font-weight:bold; color:#fff;"></div>
+                    <div id="supportBox">
+                        ❤️ <strong>Apóyanos visitando las publicidades</strong> para mantener el servicio gratuito.
+                        <span id="countdownText" style="display:block; margin-top:10px;">El botón se activará en 5...</span>
+                    </div>
+                    <button id="finalDownloadBtn" disabled>CONFIRMAR DESCARGA</button>
+                </div>
             </div>
         </div>
+        <div id="privacy-sec" class="legal-content">
+            <h2>Política de Privacidad</h2>
+            <p>Usamos cookies de AdSense. No almacenamos tus videos ni datos personales.</p>
+        </div>
+        <div id="terms-sec" class="legal-content">
+            <h2>Términos y Condiciones</h2>
+            <p>Uso personal y educativo. Respetamos los derechos de autor.</p>
+        </div>
     </div>
+    <footer>© 2026 Motor de Descarga Pro - Cochabamba 🇧🇴</footer>
     <script>
+        function showSection(sec) {
+            document.getElementById('home-sec').style.display = sec === 'home' ? 'block' : 'none';
+            document.getElementById('privacy-sec').style.display = sec === 'privacy' ? 'block' : 'none';
+            document.getElementById('terms-sec').style.display = sec === 'terms' ? 'block' : 'none';
+        }
         async function processVideo() {
             const url = document.getElementById('urlInput').value;
             const s = document.getElementById('status');
             const p = document.getElementById('previewSection');
             const b = document.getElementById('btnAction');
             if(!url) return alert("Pega un link");
-            b.disabled = true; p.style.display = 'none'; s.innerText = "⏳ Analizando enlace...";
+            b.disabled = true; p.style.display = 'none'; s.innerText = "⏳ Analizando enlace de forma segura...";
             try {
                 const res = await fetch('/api/info?url=' + encodeURIComponent(url));
                 const info = await res.json();
@@ -83,13 +110,13 @@ HTML_PREMIUM = """
                     document.getElementById('videoThumbnail').src = info.thumbnail || "";
                     document.getElementById('videoTitle').innerText = info.title || "Video Detectado";
                     p.style.display = 'block'; document.getElementById('supportBox').style.display = 'block';
-                    s.innerText = "✅ ¡Enlace Procesado!";
+                    s.innerText = "✅ ¡Detectado!";
                     let timeLeft = 5;
                     const dBtn = document.getElementById('finalDownloadBtn');
                     dBtn.disabled = true;
                     const countdown = setInterval(() => {
                         timeLeft--;
-                        document.getElementById('countdownText').innerText = `Activando botón en ${timeLeft}...`;
+                        document.getElementById('countdownText').innerText = `El botón se activará en ${timeLeft}...`;
                         if(timeLeft <= 0) { clearInterval(countdown); document.getElementById('countdownText').style.display = 'none'; dBtn.disabled = false; }
                     }, 1000);
                     dBtn.onclick = () => generateDownload(url, document.getElementById('formatInput').value);
@@ -99,13 +126,13 @@ HTML_PREMIUM = """
         }
         async function generateDownload(url, tipo) {
             const s = document.getElementById('status');
-            s.innerText = "🚀 Generando enlace final...";
+            s.innerText = "🚀 Generando descarga...";
             try {
                 const res = await fetch(`/api/down?url=${encodeURIComponent(url)}&type=${tipo}`);
                 const data = await res.json();
-                if(data.url) { window.open(data.url, '_blank'); s.innerText = "✅ Descarga lista"; }
-                else { s.innerText = "❌ No se pudo generar el archivo."; }
-            } catch (e) { s.innerText = "❌ Error en la descarga."; }
+                if(data.url) { window.open(data.url, '_blank'); s.innerText = "✅ Descarga iniciada"; }
+                else { s.innerText = "❌ No se pudo generar el enlace."; }
+            } catch (e) { s.innerText = "❌ Error en el servidor."; }
         }
     </script>
 </body>
@@ -125,14 +152,22 @@ def index():
 def api_info():
     url = request.args.get('url')
     if not url: return jsonify({"success": False})
+    
+    # Probamos con rotación de proxies y cabeceras reales
     for i in range(3):
         try:
-            headers = {"x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585", "x-rapidapi-host": "download-all-in-one-lite.p.rapidapi.com"}
-            r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", params={"url": url}, headers=headers, proxies=get_proxy(i), timeout=12)
+            headers = {
+                "x-rapidapi-key": "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585",
+                "x-rapidapi-host": "download-all-in-one-lite.p.rapidapi.com",
+                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1"
+            }
+            r = requests.get("https://download-all-in-one-lite.p.rapidapi.com/autolink", 
+                             params={"url": url}, headers=headers, proxies=get_proxy(i), timeout=12)
             data = r.json()
             if data.get("title") or data.get("thumbnail"):
                 return jsonify({"success": True, "title": data.get("title"), "thumbnail": data.get("thumbnail")})
-        except: continue
+        except:
+            continue
     return jsonify({"success": False})
 
 @app.route('/api/down')
@@ -161,7 +196,8 @@ def api_down():
                 if (fmt == 'mp4' and 'video' in m_type) or (fmt == 'mp3' and 'audio' in m_type):
                     return jsonify({"url": m.get('url')})
             if medias: return jsonify({"url": medias[0].get('url')})
-        except: continue
+        except:
+            continue
     return jsonify({"error": "No link"}), 500
 
 @app.route('/ads.txt')
