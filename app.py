@@ -131,23 +131,34 @@ def info():
 def descargar_archivo():
     video_url = request.args.get('url')
     if not video_url: return "Error"
+    
+    # DISFRAZ HUMANO NIVEL DIOS
+    session = requests.Session()
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
         'Referer': 'https://www.tiktok.com/',
-        'Accept': '*/*'
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
     }
+    
     try:
         def generate():
-            with requests.get(video_url, stream=True, headers=headers, timeout=45) as r:
+            # Forzamos la descarga lenta (chunk a chunk) para no levantar sospechas
+            with session.get(video_url, stream=True, headers=headers, timeout=60) as r:
                 r.raise_for_status()
-                for chunk in r.iter_content(chunk_size=1024*1024):
+                for chunk in r.iter_content(chunk_size=1024 * 512): # Chunks más pequeños
                     if chunk:
                         yield chunk
+
         return Response(stream_with_context(generate()), 
                         content_type="video/mp4",
                         headers={"Content-Disposition": "attachment; filename=video_motor_pro.mp4"})
     except Exception as e:
-        return f"Error: {str(e)}"
+        # Si vuelve a fallar, nos dirá por qué en pantalla
+        return f"Bloqueo de TikTok detectado: {str(e)}"
+
 
 @app.route('/privacidad')
 def privacidad(): return "Privacidad Protegida."
