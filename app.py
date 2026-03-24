@@ -42,10 +42,8 @@ HTML_PRO = '''
         .btn-clear { position: absolute; right: 10px; top: 18px; background: #444; border: none; color: #fff; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; }
         #mainBtn { width: 100%; padding: 18px; background: #fff; color: #000; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         #mainBtn:disabled { opacity: 0.5; cursor: not-allowed; }
-        
         .progress-container { margin: 20px 0; background: #222; border-radius: 10px; height: 10px; display: none; overflow: hidden; }
         .progress-bar { width: 0%; height: 100%; background: var(--primary); transition: 1s linear; }
-        
         .dl-btn { display: none; background: var(--success); color: #fff; padding: 18px; border-radius: 12px; text-decoration: none; font-weight: bold; margin-top: 20px; animation: glow 1.5s infinite alternate; }
         @keyframes glow { from { box-shadow: 0 0 5px var(--success); } to { box-shadow: 0 0 20px var(--success); transform: scale(1.02); } }
         .footer { margin-top: 50px; font-size: 11px; color: #444; }
@@ -56,26 +54,21 @@ HTML_PRO = '''
     <div class="card">
         <h1>🚀 MOTOR PRO</h1>
         <p style="color:#666; font-size:11px; letter-spacing:1px; margin-top:5px;">TIKTOK • INSTAGRAM • FACEBOOK</p>
-        
         <div class="input-group">
             <input type="text" id="urlInput" placeholder="Pega el link aquí..." autocomplete="off">
             <button class="btn-clear" onclick="document.getElementById('urlInput').value=''">✕</button>
         </div>
-
         <button id="mainBtn" onclick="procesar()">DESCARGAR VIDEO</button>
-
         <div id="result">
             <p id="status" style="color:#888; font-size:14px; margin-top:20px;"></p>
             <div class="progress-container" id="pContainer"><div class="progress-bar" id="pBar"></div></div>
             <a id="dlLink" class="dl-btn" href="#">DESCARGAR AHORA</a>
         </div>
     </div>
-
     <div class="footer">
         <a href="/privacidad">Privacidad</a> • <a href="/terminos">Términos</a>
         <p>© 2026 Motor Pro - Cochabamba 🇧🇴</p>
     </div>
-
     <script>
         async function procesar() {
             const url = document.getElementById('urlInput').value.trim();
@@ -84,18 +77,15 @@ HTML_PRO = '''
             const pBar = document.getElementById('pBar');
             const pContainer = document.getElementById('pContainer');
             const dlLink = document.getElementById('dlLink');
-
             if(!url) return;
             btn.disabled = true;
             dlLink.style.display = 'none';
-            status.innerText = "⏳ Extrayendo video mediante Proxy USA...";
-
+            status.innerText = "⏳ Extrayendo video (Proxy USA)...";
             try {
                 const response = await fetch('/api/info?url=' + encodeURIComponent(url));
                 const data = await response.json();
-
                 if(data.success) {
-                    status.innerHTML = "✅ ¡Video listo!<br><small>Activando enlace seguro en 8s...</small>";
+                    status.innerHTML = "✅ ¡Video listo!<br><small>Preparando descarga segura en 8s...</small>";
                     pContainer.style.display = 'block';
                     let seg = 8;
                     const timer = setInterval(() => {
@@ -104,15 +94,14 @@ HTML_PRO = '''
                         if(seg <= 0) {
                             clearInterval(timer);
                             pContainer.style.display = 'none';
-                            status.innerHTML = "<span style='color:lime'>¡LISTO PARA BAJAR!</span>";
-                            // AQUI EL CAMBIO: El link ahora pasa por nuestro "puente" /descargar_archivo
+                            status.innerHTML = "<span style='color:lime'>¡ENLACE ACTIVADO!</span>";
                             dlLink.href = "/descargar_archivo?url=" + encodeURIComponent(data.url);
                             dlLink.style.display = 'block';
                             btn.disabled = false;
                         }
                     }, 1000);
                 } else {
-                    status.innerText = "❌ Error en el enlace.";
+                    status.innerText = "❌ No se pudo obtener el video.";
                     btn.disabled = false;
                 }
             } catch(e) {
@@ -126,7 +115,8 @@ HTML_PRO = '''
 '''
 
 @app.route('/')
-def home(): return render_template_string(HTML_PRO)
+def home(): 
+    return render_template_string(HTML_PRO)
 
 @app.route('/api/info')
 def info():
@@ -137,44 +127,13 @@ def info():
         with yt_dlp.YoutubeDL(get_ydl_opts()) as ydl:
             i = ydl.extract_info(u, download=False)
             return jsonify({"success": True, "url": i.get('url')})
-    except: return jsonify({"success": False})
+    except: 
+        return jsonify({"success": False})
 
-# --- ESTA ES LA RUTA "PUENTE" QUE ELIMINA EL ERROR 403 ---
 @app.route('/descargar_archivo')
 def descargar_archivo():
     video_url = request.args.get('url')
-    if not video_url: return "Error: URL no válida"
-    
-    # Identidad completa para que TikTok no sospeche
+    if not video_url: return "Error"
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Referer': 'https://www.tiktok.com/',
-        'Accept': '*/*'
-    }
-    
-    try:
-        def generate():
-            # Usamos una sesión para mantener la conexión estable
-            with requests.get(video_url, stream=True, headers=headers, timeout=30) as r:
-                r.raise_for_status() # Si hay error 403, saltará al 'except'
-                for chunk in r.iter_content(chunk_size=8192):
-                    if chunk:
-                        yield chunk
-
-        return Response(stream_with_context(generate()), 
-                        content_type="video/mp4",
-                        headers={"Content-Disposition": "attachment; filename=video_motor_pro.mp4"})
-    except Exception as e:
-        return f"Error al procesar la descarga: {str(e)}"
-
-@app.route('/privacidad')
-def privacidad(): return "Privacidad Protegida."
-
-@app.route('/terminos')
-def terminos(): return "Uso personal únicamente."
-
-@app.route('/ads.txt')
-def ads_txt(): return Response("google.com, pub-8532381032470048, DIRECT, f08c47fec0942fa0", mimetype='text/plain')
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+        'Referer': '
