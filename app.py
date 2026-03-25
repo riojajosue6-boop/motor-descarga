@@ -7,54 +7,50 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# CONFIGURACIÓN PROXY USA (Solo para búsqueda, no para descarga pesada)
+# CONFIGURACIÓN PROXY USA
 def get_ydl_opts():
     return {
         'proxy': f"http://ksvyuzxs-us-rotate:r148qqniiwdz@p.webshare.io:80",
         'quiet': True,
+        'no_warnings': True,
+        'format': 'best',
+        'nocheckcertificate': True,
         'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
     }
 
-# INTERFAZ PULIDA NEÓN (MOTOR PRO BOLIVIA)
+# INTERFAZ PREMIUM NEÓN
 HTML_MASTER = '''
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motor Pro 🚀 | Eléctrico</title>
+    <title>Motor Pro 🚀</title>
     <style>
         :root { --primary: #00f2ea; --secondary: #ff0050; --success: #2ecc71; --dark: #0a0a0a; }
-        body { background: var(--dark); color: #fff; font-family: sans-serif; margin: 0; padding: 15px; text-align: center; overflow-x: hidden; }
+        body { background: var(--dark); color: #fff; font-family: sans-serif; margin: 0; padding: 15px; text-align: center; }
         .card { background: #151515; padding: 40px 20px; border-radius: 30px; border: 1px solid #333; max-width: 480px; margin: 40px auto; box-shadow: 0 20px 60px rgba(0,0,0,1); }
-        h1 { background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin:0; font-size: 35px; font-weight: 900; letter-spacing: -1px; }
-        input { width: 100%; padding: 22px; border-radius: 18px; border: 2px solid #222; background: #1a1a1a; color: #fff; box-sizing: border-box; outline: none; margin: 25px 0; font-size: 16px; transition: 0.3s; }
-        input:focus { border-color: var(--primary); }
+        h1 { background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin:0; font-size: 35px; font-weight: 900; }
+        input { width: 100%; padding: 22px; border-radius: 18px; border: 2px solid #222; background: #1a1a1a; color: #fff; box-sizing: border-box; outline: none; margin: 25px 0; font-size: 16px; }
         #mainBtn { width: 100%; padding: 20px; background: #fff; color: #000; border: none; border-radius: 18px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
-        #mainBtn:disabled { opacity: 0.3; cursor: not-allowed; }
+        #mainBtn:disabled { opacity: 0.3; }
         .progress-container { margin: 20px 0; background: #222; border-radius: 10px; height: 10px; display: none; overflow: hidden; }
         .progress-bar { width: 0%; height: 100%; background: var(--primary); transition: 1s linear; }
-        .dl-btn { display: none; background: var(--success); color: #fff; padding: 22px; border-radius: 18px; text-decoration: none; font-weight: bold; margin-top: 25px; font-size: 18px; animation: glow 2s infinite; }
-        @keyframes glow { 0% { box-shadow: 0 0 5px var(--success); } 50% { box-shadow: 0 0 30px var(--success); } 100% { box-shadow: 0 0 5px var(--success); } }
-        .footer { margin-top: 50px; font-size: 11px; color: #444; letter-spacing: 2px; }
+        .dl-btn { display: none; background: var(--success); color: #fff; padding: 22px; border-radius: 18px; text-decoration: none; font-weight: bold; margin-top: 25px; font-size: 18px; display: none; }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>MOTOR PRO</h1>
-        <p style="color:#555; font-size:12px; margin-top:5px; font-weight:bold;">PREMIUM CLOUD | COCHABAMBA 🇧🇴</p>
-        
-        <input type="text" id="urlInput" placeholder="Pega el link de TikTok aquí..." autocomplete="off">
+        <p style="color:#555; font-size:12px; font-weight:bold;">PREMIUM CLOUD • BOLIVIA 🇧🇴</p>
+        <input type="text" id="urlInput" placeholder="Pega el link de TikTok aquí...">
         <button id="mainBtn" onclick="procesar()">INICIAR PROCESO</button>
-        
         <div id="result">
-            <p id="status" style="margin-top:20px; color:#aaa; font-size:14px;"></p>
+            <p id="status" style="margin-top:20px; color:#aaa;"></p>
             <div class="progress-container" id="pContainer"><div class="progress-bar" id="pBar"></div></div>
             <a id="dlLink" class="dl-btn" href="#">⬇️ DESCARGAR AHORA</a>
         </div>
     </div>
-    <div class="footer">© 2026 MOTOR PRO • JOSUE</div>
-
     <script>
         async function procesar() {
             const url = document.getElementById('urlInput').value.trim();
@@ -63,21 +59,16 @@ HTML_MASTER = '''
             const btn = document.getElementById('mainBtn');
             const pBar = document.getElementById('pBar');
             const pContainer = document.getElementById('pContainer');
-            
             if(!url) return;
-            
             btn.disabled = true;
             dlLink.style.display = 'none';
-            status.innerHTML = "📡 <span style='color:var(--primary)'>INYECTANDO PROXY USA...</span>";
-
+            status.innerHTML = "📡 Conectando con servidor USA...";
             try {
                 const response = await fetch('/api/info?url=' + encodeURIComponent(url));
                 const data = await response.json();
-                
                 if(data.success) {
-                    status.innerHTML = "✅ ¡Video capturado! <br>Preparando descarga segura en 8s...";
+                    status.innerHTML = "✅ ¡Video listo! Preparando descarga segura...";
                     pContainer.style.display = 'block';
-                    
                     let seg = 8;
                     const timer = setInterval(() => {
                         seg--;
@@ -113,13 +104,12 @@ def home():
 def info():
     u = request.args.get('url')
     if not u: return jsonify({"success": False})
-    # Limpiamos rastreadores
     if "?" in u: u = u.split("?")[0]
     try:
         with yt_dlp.YoutubeDL(get_ydl_opts()) as ydl:
             i = ydl.extract_info(u, download=False)
             return jsonify({"success": True, "url": i.get('url')})
-    exceptException as e:
+    except Exception as e:
         print(f"Log Error: {e}")
         return jsonify({"success": False})
 
@@ -127,42 +117,27 @@ def info():
 def descargar_archivo():
     video_url = request.args.get('url')
     if not video_url: return "URL Error"
-    
-    # DISFRAZ DE ALTO NIVEL PARA LA DESCARGA FINAL
-    # Usamos Range Request para que TikTok crea que es un reproductor de video
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
         'Referer': 'https://www.tiktok.com/',
-        'Range': 'bytes=0-',
-        'Accept': '*/*'
+        'Range': 'bytes=0-'
     }
-    
     try:
-        # Iniciamos descarga en modo Stream para no bloquear tu plan de pago
         r = requests.get(video_url, headers=headers, stream=True, timeout=60)
         r.raise_for_status()
-        
         def generate():
-            # Chunks de 1MB para mayor velocidad
             for chunk in r.iter_content(chunk_size=1024*1024):
-                if chunk:
-                    yield chunk
-
-        # Entregamos el archivo con el tamaño exacto del video (Content-Length)
+                if chunk: yield chunk
         response_headers = {
             "Content-Disposition": "attachment; filename=motor_pro_video.mp4",
             "Content-Type": "video/mp4"
         }
         if r.headers.get('Content-Length'):
             response_headers["Content-Length"] = r.headers.get('Content-Length')
-
         return Response(stream_with_context(generate()), headers=response_headers)
     except Exception as e:
         return f"Error en puente: {str(e)}"
 
 if __name__ == "__main__":
-    # --- LA CORRECCIÓN MAESTRA PARA RAILWAY ---
-    # Inyectamos el puerto que Railway te da dinámicamente
     port = int(os.environ.get("PORT", 8080))
-    # threaded=True activa los hilos de tu servidor de pago para mayor rendimiento
     app.run(host="0.0.0.0", port=port, threaded=True)
