@@ -1,13 +1,12 @@
 import os
 import yt_dlp
-import requests
-from flask import Flask, request, jsonify, render_template_string, Response, stream_with_context
+from flask import Flask, request, jsonify, render_template_string
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
 
-# CONFIGURACIÓN PROXY USA
+# CONFIGURACIÓN PROXY USA (Solo para búsqueda)
 def get_ydl_opts():
     return {
         'proxy': f"http://ksvyuzxs-us-rotate:r148qqniiwdz@p.webshare.io:80",
@@ -18,7 +17,6 @@ def get_ydl_opts():
         'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
     }
 
-# INTERFAZ PREMIUM NEÓN
 HTML_MASTER = '''
 <!DOCTYPE html>
 <html lang="es">
@@ -34,21 +32,18 @@ HTML_MASTER = '''
         input { width: 100%; padding: 22px; border-radius: 18px; border: 2px solid #222; background: #1a1a1a; color: #fff; box-sizing: border-box; outline: none; margin: 25px 0; font-size: 16px; }
         #mainBtn { width: 100%; padding: 20px; background: #fff; color: #000; border: none; border-radius: 18px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
         #mainBtn:disabled { opacity: 0.3; }
-        .progress-container { margin: 20px 0; background: #222; border-radius: 10px; height: 10px; display: none; overflow: hidden; }
-        .progress-bar { width: 0%; height: 100%; background: var(--primary); transition: 1s linear; }
-        .dl-btn { display: none; background: var(--success); color: #fff; padding: 22px; border-radius: 18px; text-decoration: none; font-weight: bold; margin-top: 25px; font-size: 18px; display: none; }
+        .dl-btn { display: none; background: var(--success); color: #fff; padding: 22px; border-radius: 18px; text-decoration: none; font-weight: bold; margin-top: 25px; font-size: 18px; display: inline-block; width: 80%; box-shadow: 0 0 20px var(--success); }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>MOTOR PRO</h1>
-        <p style="color:#555; font-size:12px; font-weight:bold;">PREMIUM CLOUD • BOLIVIA 🇧🇴</p>
+        <p style="color:#555; font-size:12px; font-weight:bold;">MODO DESCARGA DIRECTA ACTIVADO ⚡</p>
         <input type="text" id="urlInput" placeholder="Pega el link de TikTok aquí...">
-        <button id="mainBtn" onclick="procesar()">INICIAR PROCESO</button>
+        <button id="mainBtn" onclick="procesar()">ARRANCAR MOTOR</button>
         <div id="result">
             <p id="status" style="margin-top:20px; color:#aaa;"></p>
-            <div class="progress-container" id="pContainer"><div class="progress-bar" id="pBar"></div></div>
-            <a id="dlLink" class="dl-btn" href="#">⬇️ DESCARGAR AHORA</a>
+            <a id="dlLink" class="dl-btn" href="#" download="video_motor_pro.mp4">📥 GUARDAR VIDEO</a>
         </div>
     </div>
     <script>
@@ -57,37 +52,24 @@ HTML_MASTER = '''
             const status = document.getElementById('status');
             const dlLink = document.getElementById('dlLink');
             const btn = document.getElementById('mainBtn');
-            const pBar = document.getElementById('pBar');
-            const pContainer = document.getElementById('pContainer');
             if(!url) return;
             btn.disabled = true;
             dlLink.style.display = 'none';
-            status.innerHTML = "📡 Conectando con servidor USA...";
+            status.innerHTML = "📡 Buscando enlace en USA...";
             try {
                 const response = await fetch('/api/info?url=' + encodeURIComponent(url));
                 const data = await response.json();
                 if(data.success) {
-                    status.innerHTML = "✅ ¡Video listo! Preparando descarga segura...";
-                    pContainer.style.display = 'block';
-                    let seg = 8;
-                    const timer = setInterval(() => {
-                        seg--;
-                        pBar.style.width = ((8-seg)/8)*100 + "%";
-                        if(seg <= 0) {
-                            clearInterval(timer);
-                            pContainer.style.display = 'none';
-                            status.innerHTML = "<span style='color:lime'>¡LISTO PARA BAJAR!</span>";
-                            dlLink.href = "/descargar_archivo?url=" + encodeURIComponent(data.url);
-                            dlLink.style.display = 'block';
-                            btn.disabled = false;
-                        }
-                    }, 1000);
+                    status.innerHTML = "✅ ¡Enlace capturado!<br>Haz clic abajo para descargar directamente.";
+                    dlLink.href = data.url;
+                    dlLink.style.display = 'block';
+                    btn.disabled = false;
                 } else {
                     status.innerText = "❌ No se pudo obtener el video.";
                     btn.disabled = false;
                 }
             } catch(e) {
-                status.innerText = "❌ Error de conexión con Railway.";
+                status.innerText = "❌ Error de conexión.";
                 btn.disabled = false;
             }
         }
@@ -108,36 +90,11 @@ def info():
     try:
         with yt_dlp.YoutubeDL(get_ydl_opts()) as ydl:
             i = ydl.extract_info(u, download=False)
+            # Enviamos el link directo al navegador del usuario
             return jsonify({"success": True, "url": i.get('url')})
     except Exception as e:
-        print(f"Log Error: {e}")
         return jsonify({"success": False})
-
-@app.route('/descargar_archivo')
-def descargar_archivo():
-    video_url = request.args.get('url')
-    if not video_url: return "URL Error"
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Referer': 'https://www.tiktok.com/',
-        'Range': 'bytes=0-'
-    }
-    try:
-        r = requests.get(video_url, headers=headers, stream=True, timeout=60)
-        r.raise_for_status()
-        def generate():
-            for chunk in r.iter_content(chunk_size=1024*1024):
-                if chunk: yield chunk
-        response_headers = {
-            "Content-Disposition": "attachment; filename=motor_pro_video.mp4",
-            "Content-Type": "video/mp4"
-        }
-        if r.headers.get('Content-Length'):
-            response_headers["Content-Length"] = r.headers.get('Content-Length')
-        return Response(stream_with_context(generate()), headers=response_headers)
-    except Exception as e:
-        return f"Error en puente: {str(e)}"
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port, threaded=True)
+    app.run(host="0.0.0.0", port=port)
