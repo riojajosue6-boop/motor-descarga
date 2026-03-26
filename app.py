@@ -12,6 +12,7 @@ API_HOST = "auto-download-all-in-one.p.rapidapi.com"
 PROPIETARIO = "TurboLink Digital"
 BLOG_SOPORTE = "https://tu-blog-aqui.blogspot.com"
 
+# Registro de límites por IP
 user_registry = {}
 
 def get_clean_url(raw_url):
@@ -31,22 +32,22 @@ def home():
     <html lang="es">
     <head>
         <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>TurboLink 🚀 | Descarga Real</title>
+        <title>TurboLink 🚀 | Descargas Pro</title>
         <style>
             :root { --cian: #00f2ea; --fucsia: #ff0050; --bg: #050505; --card: #121212; }
             body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; padding: 15px; text-align: center; }
-            .card { max-width: 450px; margin: 20px auto; background: var(--card); padding: 25px; border-radius: 25px; border: 1px solid #333; }
+            .card { max-width: 450px; margin: 20px auto; background: var(--card); padding: 25px; border-radius: 25px; border: 1px solid #333; box-shadow: 0 0 20px rgba(0,242,234,0.15); }
             h1 { color: var(--cian); text-transform: uppercase; text-shadow: 0 0 10px var(--cian); margin-bottom: 5px; }
-            .stats { display: flex; justify-content: space-around; font-size: 12px; margin: 15px 0; background: #1a1a1a; padding: 12px; border-radius: 12px; }
+            .stats { display: flex; justify-content: space-around; font-size: 12px; margin: 15px 0; background: #1a1a1a; padding: 12px; border-radius: 12px; border: 1px solid #222; }
             .stats b { color: var(--fucsia); font-size: 16px; }
             .input-group { position: relative; margin-bottom: 20px; }
             input { width: 100%; padding: 16px; border-radius: 12px; border: 2px solid #333; background: #000; color: #fff; box-sizing: border-box; font-size: 16px; outline: none; }
-            .btn-clear { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #222; color: #fff; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; }
+            .btn-clear { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #222; color: #fff; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-weight: bold; }
             .btn-main { width: 100%; padding: 18px; background: var(--cian); color: #000; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
             #previewSection { display: none; margin-top: 25px; border-top: 1px solid #333; padding-top: 20px; }
             .thumb { width: 100%; border-radius: 15px; border: 1px solid #444; margin-bottom: 15px; }
             .support-msg { background: rgba(0, 242, 234, 0.05); color: #2ecc71; padding: 15px; border-radius: 15px; font-size: 13px; line-height: 1.5; border: 1px dashed #00f2ea; }
-            .btn-dl { width: 100%; padding: 18px; background: #2ecc71; color: #000; border: none; border-radius: 12px; font-weight: bold; font-size: 17px; cursor: pointer; margin-top: 15px; }
+            .btn-dl { width: 100%; padding: 18px; background: #2ecc71; color: #000; border: none; border-radius: 12px; font-weight: bold; font-size: 17px; cursor: pointer; margin-top: 15px; text-decoration: none; display: block; }
             .btn-dl:disabled { background: #333; color: #777; cursor: not-allowed; }
             footer { margin-top: 40px; font-size: 11px; color: #444; }
         </style>
@@ -74,17 +75,20 @@ def home():
                     <br><br>
                     <span id="timerText" style="color:#fff; font-size:18px; font-weight:bold;">Activando en 12s...</span>
                 </div>
-                <button id="dlBtn" class="btn-dl" disabled onclick="forceSave()">DESCARGAR VIDEO</button>
+                <a id="vLink" href="" download class="btn-dl" style="display:none;">DESCARGAR VIDEO</a>
+                <button id="dlBtnPlaceholder" class="btn-dl" disabled>DESCARGAR VIDEO</button>
             </div>
         </div>
         <footer>© 2026 TurboLink Digital</footer>
 
         <script>
-            let downloadUrl = "";
             async function getStats() {
-                const r = await fetch('/api/user_info'); const d = await r.json();
-                document.getElementById('p-count').innerText = d.premium;
-                document.getElementById('s-count').innerText = d.social;
+                try {
+                    const r = await fetch('/api/user_info'); 
+                    const d = await r.json();
+                    document.getElementById('p-count').innerText = d.premium;
+                    document.getElementById('s-count').innerText = d.social;
+                } catch(e){}
             }
             getStats();
 
@@ -111,11 +115,14 @@ def home():
                         status.innerText = "✅ ¡Listo!";
                         document.getElementById('vThumb').src = d.thumbnail;
                         document.getElementById('vTitle').innerText = d.title;
-                        downloadUrl = d.download_url;
+                        
+                        const linkReal = document.getElementById('vLink');
+                        linkReal.href = d.download_url;
+                        
                         preview.style.display = 'block';
 
                         let timeLeft = 12;
-                        const dlBtn = document.getElementById('dlBtn');
+                        const dlBtnPlace = document.getElementById('dlBtnPlaceholder');
                         const timerText = document.getElementById('timerText');
                         
                         const timer = setInterval(() => {
@@ -124,36 +131,13 @@ def home():
                             if(timeLeft <= 0) {
                                 clearInterval(timer);
                                 timerText.innerText = "¡Listo!";
-                                dlBtn.disabled = false;
+                                dlBtnPlace.style.display = 'none';
+                                linkReal.style.display = 'block';
                                 getStats();
                             }
                         }, 1000);
                     } else { status.innerText = "❌ " + d.message; btn.disabled = false; }
-                } catch(e) { status.innerText = "❌ Error de conexión."; btn.disabled = false; }
-            }
-
-            async function forceSave() {
-                const btn = document.getElementById('dlBtn');
-                btn.innerText = "📥 Guardando...";
-                btn.disabled = true;
-                try {
-                    // Descarga el video en el navegador (no en el servidor) para evitar redirecciones
-                    const response = await fetch(downloadUrl);
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = "TurboLink_Video.mp4";
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    btn.innerText = "✅ Completado";
-                } catch (e) {
-                    // Si el navegador bloquea el fetch por CORS, abrimos en pestaña nueva como respaldo
-                    window.open(downloadUrl, '_blank');
-                    btn.innerText = "Revisa tu nueva pestaña";
-                }
-                btn.disabled = false;
+                } catch(e) { status.innerText = "❌ Error de servidor."; btn.disabled = false; }
             }
         </script>
     </body>
@@ -167,6 +151,8 @@ def user_info():
 @app.route('/api/get_info')
 def get_info():
     url = get_clean_url(request.args.get('url'))
+    if not url: return jsonify({"success": False, "message": "Link inválido."})
+    
     ip = request.remote_addr
     st = check_user(ip)
     is_p = any(x in url for x in ["tiktok", "youtube", "youtu.be"])
@@ -191,5 +177,6 @@ def get_info():
     return jsonify({"success": False, "message": "Video no disponible."})
 
 if __name__ == "__main__":
+    # Puerto obligatorio para Railway
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
