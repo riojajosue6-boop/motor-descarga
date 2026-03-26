@@ -29,7 +29,7 @@ def home():
     <html lang="es">
     <head>
         <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>TurboLink 🚀 | Descargas Reales</title>
+        <title>TurboLink 🚀 | Descarga Real</title>
         <style>
             :root { --cian: #00f2ea; --fucsia: #ff0050; --bg: #050505; --card: #121212; }
             body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; padding: 15px; text-align: center; }
@@ -37,10 +37,8 @@ def home():
             h1 { color: var(--cian); text-transform: uppercase; text-shadow: 0 0 10px var(--cian); }
             .stats { display: flex; justify-content: space-around; font-size: 12px; margin: 15px 0; background: #1a1a1a; padding: 12px; border-radius: 12px; }
             .stats b { color: var(--fucsia); font-size: 16px; }
-            .input-group { position: relative; margin-bottom: 20px; }
             input { width: 100%; padding: 16px; border-radius: 12px; border: 2px solid #333; background: #000; color: #fff; box-sizing: border-box; font-size: 16px; outline: none; }
-            .btn-clear { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #222; color: #fff; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; }
-            .btn-main { width: 100%; padding: 18px; background: var(--cian); color: #000; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+            .btn-main { width: 100%; padding: 18px; background: var(--cian); color: #000; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
             #previewSection { display: none; margin-top: 25px; border-top: 1px solid #333; padding-top: 20px; }
             .thumb { width: 100%; border-radius: 15px; border: 1px solid #444; margin-bottom: 15px; }
             .btn-dl { width: 100%; padding: 18px; background: #2ecc71; color: #000; border: none; border-radius: 12px; font-weight: bold; font-size: 17px; cursor: pointer; margin-top: 15px; }
@@ -55,52 +53,38 @@ def home():
                 <div>YT/TikTok: <b id="p-count">-</b></div>
                 <div>Social: <b id="s-count">-</b></div>
             </div>
-            <div class="input-group">
-                <input type="text" id="urlInput" placeholder="Pega el enlace aquí...">
-                <button class="btn-clear" onclick="resetAll()">✕</button>
-            </div>
+            <input type="text" id="urlInput" placeholder="Pega el link aquí...">
             <button id="btnAction" class="btn-main" onclick="analyze()">Generar Descarga</button>
             <div id="status" style="margin-top:15px; font-weight:bold; color: var(--cian);"></div>
 
             <div id="previewSection">
                 <img id="vThumb" class="thumb" src="">
-                <div id="vTitle" style="font-weight:bold; font-size:14px; margin-bottom:15px;"></div>
                 <div class="support-msg">
                     🚀 ¡Video Listo!<br>
-                    Ayúdanos a mantener el servidor gratuito visitando nuestros anuncios mientras se activa tu descarga.
+                    Ayúdanos haciendo clic en la publicidad mientras se habilita tu descarga.
                     <br><br>
                     <span id="timerText" style="color:#fff; font-size:18px; font-weight:bold;">Esperando 12s...</span>
                 </div>
-                <button id="dlBtn" class="btn-dl" disabled onclick="forceDownload()">DESCARGAR VIDEO</button>
+                <button id="dlBtn" class="btn-dl" disabled onclick="forceSave()">DESCARGAR VIDEO</button>
             </div>
         </div>
 
         <script>
-            let finalVideoUrl = "";
-
-            function resetAll() {
-                document.getElementById('urlInput').value = '';
-                document.getElementById('previewSection').style.display = 'none';
-                document.getElementById('status').innerText = '';
-                document.getElementById('btnAction').disabled = false;
-            }
+            let downloadUrl = "";
 
             async function analyze() {
                 const url = document.getElementById('urlInput').value; if(!url) return;
-                const btn = document.getElementById('btnAction');
                 const status = document.getElementById('status');
                 const preview = document.getElementById('previewSection');
                 
-                btn.disabled = true; status.innerText = "⏳ Procesando...";
-                
+                status.innerText = "⏳ Procesando...";
                 try {
                     const r = await fetch('/api/get_info?url=' + encodeURIComponent(url));
                     const d = await r.json();
                     if(d.success) {
-                        status.innerText = "✅ ¡Listo!";
+                        status.innerText = "✅ Detectado";
                         document.getElementById('vThumb').src = d.thumbnail;
-                        document.getElementById('vTitle').innerText = d.title;
-                        finalVideoUrl = d.download_url;
+                        downloadUrl = d.download_url;
                         preview.style.display = 'block';
 
                         let timeLeft = 12;
@@ -112,38 +96,37 @@ def home():
                             timerText.innerText = `Preparando en ${timeLeft}s...`;
                             if(timeLeft <= 0) {
                                 clearInterval(timer);
-                                timerText.innerText = "¡Botón Activado!";
+                                timerText.innerText = "¡Listo!";
                                 dlBtn.disabled = false;
                             }
                         }, 1000);
-                    } else { status.innerText = "❌ " + d.message; btn.disabled = false; }
-                } catch(e) { status.innerText = "❌ Error de conexión."; btn.disabled = false; }
+                    } else { status.innerText = "❌ " + d.message; }
+                } catch(e) { status.innerText = "❌ Error."; }
             }
 
-            async function forceDownload() {
+            async function forceSave() {
                 const btn = document.getElementById('dlBtn');
-                btn.innerText = "⏳ Descargando al dispositivo...";
+                btn.innerText = "📥 Guardando...";
                 btn.disabled = true;
 
+                // MÉTODO QUE EVITA EL LOGUEO DE FACEBOOK:
+                // Pedimos el video como un archivo de datos, no como un link
                 try {
-                    // ESTO EVITA QUE SE ABRA LA APP: Descargamos el video como datos (Blob)
-                    const response = await fetch(finalVideoUrl);
+                    const response = await fetch(downloadUrl);
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
-                    
                     const a = document.createElement('a');
-                    a.style.display = 'none';
                     a.href = url;
                     a.download = "TurboLink_Video.mp4";
                     document.body.appendChild(a);
                     a.click();
-                    
                     window.URL.revokeObjectURL(url);
-                    btn.innerText = "✅ ¡Guardado!";
-                } catch (error) {
-                    // Si falla el método silencioso, abrimos en pestaña nueva como último recurso
-                    window.open(finalVideoUrl, '_blank');
-                    btn.innerText = "Revisa tu nueva pestaña";
+                    btn.innerText = "✅ ¡Video Guardado!";
+                } catch (e) {
+                    // Si el navegador bloquea el fetch, usamos el método de pestaña limpia
+                    const newWin = window.open('', '_blank');
+                    newWin.document.write('<html><body style="margin:0; background:#000; display:flex; align-items:center; justify-content:center;"><video controls autoplay style="max-width:100%;"><source src="' + downloadUrl + '" type="video/mp4"></video></body></html>');
+                    btn.innerText = "Usa el menú del video para Guardar";
                 }
                 btn.disabled = false;
             }
@@ -165,10 +148,7 @@ def home():
 @app.route('/api/user_info')
 def user_info():
     ip = request.remote_addr
-    today = datetime.now().strftime('%Y-%m-%d')
-    if ip not in user_registry or user_registry.get(ip, {}).get('date') != today:
-        user_registry[ip] = {'date': today, 'premium': 2, 'social': 3}
-    return jsonify(user_registry[ip])
+    return jsonify(check_user(ip))
 
 @app.route('/api/get_info')
 def get_info():
@@ -181,12 +161,10 @@ def get_info():
         if dl_url:
             return jsonify({
                 "success": True, "download_url": dl_url, 
-                "thumbnail": data.get('thumbnail') or data.get('picture') or "", 
-                "title": data.get("title", "Video TurboLink")
+                "thumbnail": data.get('thumbnail') or data.get('picture') or ""
             })
     except: pass
-    return jsonify({"success": False, "message": "Video no disponible."})
+    return jsonify({"success": False, "message": "No se pudo extraer."})
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
