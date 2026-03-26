@@ -1,75 +1,126 @@
 import os
-import yt_dlp
-import requests
-from flask import Flask, request, jsonify, render_template_string, Response, stream_with_context
-from flask_cors import CORS
+import time
+from flask import Flask, request, jsonify, render_template_string, redirect
 
 app = Flask(__name__)
-CORS(app)
 
-# CONFIGURACIÓN PROXY USA (WEBSHARE)
-def get_ydl_opts():
-    proxy = "http://ksvyuzxs-us-rotate:r148qqniiwdz@p.webshare.io:80"
-    return {
-        'proxy': proxy,
-        'quiet': True,
-        'no_warnings': True,
-        'format': 'best',
-        'nocheckcertificate': True,
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-    }
+# --- CONFIGURACIÓN DE SEGURIDAD Y MOTOR ---
+API_KEY = "47df6ef77amshc35a5a164a0e928p191584jsn8260ed140585"
+API_HOST = "auto-download-all-in-one.p.rapidapi.com"
 
-HTML_PWA = '''
+# Base de datos temporal en memoria (Se reinicia con el servidor)
+user_stats = {} 
+
+HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motor Pro 🚀</title>
-    <link rel="manifest" href="/manifest.json">
+    <title>TurboLink 🚀 | Descargas Pro</title>
     <style>
-        :root { --primary: #00f2ea; --secondary: #ff0050; --dark: #0a0a0a; }
-        body { background: var(--dark); color: #fff; font-family: sans-serif; padding: 20px; text-align: center; }
-        .card { background: #151515; padding: 40px 20px; border-radius: 30px; border: 1px solid #333; max-width: 450px; margin: auto; box-shadow: 0 20px 50px #000; }
-        h1 { background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 32px; font-weight: 900; }
-        input { width: 100%; padding: 20px; border-radius: 15px; border: 1px solid #333; background: #222; color: #fff; margin: 25px 0; box-sizing: border-box; outline: none; }
-        #btn { width: 100%; padding: 20px; background: #fff; color: #000; border: none; border-radius: 15px; font-weight: bold; cursor: pointer; }
-        .dl-btn { display: none; background: #2ecc71; color: white; padding: 22px; border-radius: 18px; text-decoration: none; margin-top: 25px; font-weight: bold; display: none; box-shadow: 0 0 20px #2ecc71; }
+        :root { --primary: #00f2ea; --secondary: #ff0050; --bg: #0a0a0a; --card: #151515; }
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; text-align: center; }
+        .container { max-width: 500px; margin: auto; background: var(--card); padding: 30px; border-radius: 25px; border: 1px solid #333; box-shadow: 0 10px 50px rgba(0,0,0,0.8); }
+        h1 { color: var(--primary); font-size: 32px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; }
+        p.tagline { color: #666; font-size: 12px; margin-bottom: 30px; font-weight: bold; }
+        
+        .input-group { position: relative; margin-bottom: 20px; }
+        input { width: 100%; padding: 18px; border-radius: 15px; border: 2px solid #222; background: #1a1a1a; color: #fff; box-sizing: border-box; font-size: 16px; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 15px var(--primary); }
+        .clear-btn { position: absolute; right: 15px; top: 18px; color: #555; cursor: pointer; font-weight: bold; }
+
+        button { width: 100%; padding: 18px; background: var(--primary); color: #000; border: none; border-radius: 15px; font-weight: 900; cursor: pointer; transition: 0.3s; text-transform: uppercase; }
+        button:disabled { background: #333; color: #666; }
+        
+        #timer-msg { display: none; margin-top: 20px; padding: 15px; background: rgba(0,242,234,0.1); border-radius: 10px; border: 1px dashed var(--primary); font-size: 14px; color: #ccc; }
+        .stats { margin-top: 25px; font-size: 12px; color: #555; display: flex; justify-content: space-around; }
+        .footer { margin-top: 40px; font-size: 11px; color: #444; }
+        .footer a { color: #666; text-decoration: none; margin: 0 10px; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>MOTOR PRO</h1>
-        <p style="color:#555; font-size:11px; font-weight:bold;">MODO TÚNEL USA ACTIVO 🛰️</p>
-        <input type="text" id="urlInput" placeholder="Pega el link de TikTok aquí...">
-        <button id="btn" onclick="procesar()">INICIAR DESCARGA</button>
-        <div id="status" style="margin-top:20px; color:#aaa;"></div>
-        <a id="dlLink" class="dl-btn" href="#">📥 GUARDAR EN GALERÍA</a>
+    <div class="container">
+        <h1>TURBOLINK</h1>
+        <p class="tagline">MULTIDOWNLOADER • CLOUD 🇧🇴</p>
+        
+        <div class="input-group">
+            <input type="text" id="urlInput" placeholder="Pega el link aquí...">
+            <span class="clear-btn" onclick="document.getElementById('urlInput').value=''">X</span>
+        </div>
+
+        <button id="mainBtn" onclick="startProcess()">Arrancar Motor</button>
+
+        <div id="timer-msg">
+            🚀 <span id="msg-text">Preparando motor...</span><br>
+            <small>Por favor visita la publicidad, esto mantiene el servicio gratuito.</small>
+            <h2 id="countdown" style="color:var(--primary); margin: 10px 0;">15</h2>
+        </div>
+
+        <div id="status" style="margin-top:20px; font-weight:bold;"></div>
+
+        <div class="stats">
+            <span>Redes: <b id="stat-social">0/4</b></span>
+            <span>YouTube: <b id="stat-yt">0/3</b></span>
+        </div>
     </div>
+
+    <div class="footer">
+        <a href="#">Privacidad</a> | <a href="#">Términos DMCA</a> | <a href="#">Contacto</a>
+        <p>© 2026 TurboLink Bolivia - No almacenamos archivos.</p>
+    </div>
+
     <script>
-        async function procesar() {
-            const url = document.getElementById('urlInput').value.trim();
+        let downloads = { social: 0, yt: 0 };
+
+        async function startProcess() {
+            const url = document.getElementById('urlInput').value;
+            if(!url) return alert("Pega un link primero");
+
+            const btn = document.getElementById('mainBtn');
+            const timerMsg = document.getElementById('timer-msg');
             const status = document.getElementById('status');
-            const dl = document.getElementById('dlLink');
-            const btn = document.getElementById('btn');
-            if(!url) return;
+            const countDisplay = document.getElementById('countdown');
+
+            // Lógica de espera (Peaje de Adsense)
             btn.disabled = true;
-            dl.style.display = "none";
-            status.innerHTML = "⏳ <span style='color:var(--primary)'>Extrayendo video mediante USA...</span>";
+            status.innerHTML = "";
+            timerMsg.style.display = "block";
+            
+            let timeLeft = 15;
+            let timer = setInterval(async () => {
+                timeLeft--;
+                countDisplay.innerText = timeLeft;
+                if(timeLeft <= 0) {
+                    clearInterval(timer);
+                    timerMsg.style.display = "none";
+                    await callAPI(url);
+                    btn.disabled = false;
+                }
+            }, 1000);
+        }
+
+        async function callAPI(url) {
+            const status = document.getElementById('status');
+            status.innerHTML = "⏳ Extrayendo video...";
+            
             try {
-                const res = await fetch('/api/info?url=' + encodeURIComponent(url));
-                const data = await res.json();
+                const response = await fetch('/api/fetch?url=' + encodeURIComponent(url));
+                const data = await response.json();
+                
                 if(data.success) {
-                    status.innerHTML = "✅ ¡Video listo! <br>Haz clic para descargar.";
-                    dl.href = "/tunel?url=" + encodeURIComponent(data.url);
-                    dl.style.display = "block";
+                    status.innerHTML = "✅ ¡Éxito! Redirigiendo...";
+                    // Actualizar stats visuales
+                    document.getElementById('stat-social').innerText = data.stats.social + "/4";
+                    document.getElementById('stat-yt').innerText = data.stats.yt + "/3";
+                    
+                    // Redirección directa para ahorrar Ancho de Banda (Giga)
+                    window.location.href = data.download_url;
                 } else {
-                    status.innerText = "❌ No se pudo capturar el video.";
+                    status.innerHTML = "❌ " + data.message;
                 }
             } catch(e) {
-                status.innerText = "❌ Error de conexión.";
-            } finally {
-                btn.disabled = false;
+                status.innerHTML = "❌ Error en el servidor.";
             }
         }
     </script>
@@ -78,42 +129,59 @@ HTML_PWA = '''
 '''
 
 @app.route('/')
-def index(): return render_template_string(HTML_PWA)
+def home():
+    return render_template_string(HTML_TEMPLATE)
 
-@app.route('/api/info')
-def info():
-    u = request.args.get('url')
-    try:
-        with yt_dlp.YoutubeDL(get_ydl_opts()) as ydl:
-            i = ydl.extract_info(u, download=False)
-            return jsonify({"success": True, "url": i['url']})
-    except: return jsonify({"success": False})
+@app.route('/api/fetch')
+def fetch_video():
+    url = request.args.get('url')
+    user_ip = request.remote_addr # Identificamos al usuario por IP
+    
+    # Inicializar contador si es nuevo
+    if user_ip not in user_stats:
+        user_stats[user_ip] = {'yt': 0, 'social': 0}
+    
+    is_yt = "youtube.com" in url or "youtu.be" in url
+    
+    # --- CONTROL DE TANQUE (LÍMITES) ---
+    if is_yt and user_stats[user_ip]['yt'] >= 3:
+        return jsonify({"success": False, "message": "Cupo de YouTube agotado por hoy."})
+    if not is_yt and user_stats[user_ip]['social'] >= 4:
+        return jsonify({"success": False, "message": "Cupo de Redes Sociales agotado."})
 
-@app.route('/tunel')
-def tunel():
-    video_url = request.args.get('url')
-    # USAMOS EL PROXY TAMBIÉN PARA LA DESCARGA
-    proxy = {"http": "http://ksvyuzxs-us-rotate:r148qqniiwdz@p.webshare.io:80", "https": "http://ksvyuzxs-us-rotate:r148qqniiwdz@p.webshare.io:80"}
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36', 'Referer': 'https://www.tiktok.com/'}
+    # --- LLAMADA A LA API DE $9 ---
+    import requests
+    api_url = "https://auto-download-all-in-one.p.rapidapi.com/v1/social/autolink"
+    headers = {
+        "content-type": "application/json",
+        "x-rapidapi-host": API_HOST,
+        "x-rapidapi-key": API_KEY
+    }
     
     try:
-        def generate():
-            with requests.get(video_url, stream=True, headers=headers, proxies=proxy, timeout=60) as r:
-                r.raise_for_status()
-                for chunk in r.iter_content(chunk_size=1024*1024):
-                    yield chunk
+        r = requests.post(api_url, json={"url": url}, headers=headers, timeout=15)
+        res_data = r.json()
         
-        return Response(stream_with_context(generate()), content_type="video/mp4", headers={"Content-Disposition": "attachment; filename=video_motorpro.mp4"})
+        # Simulamos verificación de peso (Escudo 25MB)
+        # Nota: La mayoría de las APIs de video no dan el peso exacto antes,
+        # pero configuramos el redirect para proteger tu Giga de banda ancha.
+        
+        if res_data.get('url'):
+            # Sumar al contador
+            if is_yt: user_stats[user_ip]['yt'] += 1
+            else: user_stats[user_ip]['social'] += 1
+            
+            return jsonify({
+                "success": True, 
+                "download_url": res_data['url'],
+                "stats": user_stats[user_ip]
+            })
+        else:
+            return jsonify({"success": False, "message": "Video no encontrado o privado."})
+            
     except Exception as e:
-        return str(e)
-
-@app.route('/manifest.json')
-def manifest():
-    return jsonify({"name": "Motor Pro", "short_name": "MotorPro", "start_url": "/", "display": "standalone", "background_color": "#0a0a0a", "theme_color": "#00f2ea", "icons": [{"src": "https://cdn-icons-png.flaticon.com/512/2583/2583130.png", "sizes": "512x512", "type": "image/png"}]})
-
-@app.route('/sw.js')
-def sw():
-    return Response("self.addEventListener('fetch', function(event) {});", mimetype='application/javascript')
+        return jsonify({"success": False, "message": "Error de conexión con el motor."})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
