@@ -13,9 +13,19 @@ API_HOST = "auto-download-all-in-one.p.rapidapi.com"
 user_registry = {}
 
 def get_clean_url(raw_url):
-    # FILTRO: Extrae solo la URL real y descarta el texto basura (como attributeStyleMap)
-    url_match = re.search(r'(https?://[^\s\'"]+)', raw_url)
-    return url_match.group(1) if url_match else None
+    """
+    EXTRACTOR BLINDADO: 
+    Busca estrictamente algo que empiece con http y tenga formato de link.
+    Ignora textos como 'attributeStyleMap', 'StylePropertyMap', etc.
+    """
+    # Esta expresión regular busca solo la URL limpia dentro de cualquier texto
+    url_match = re.search(r'(https?://[^\s\'"<>]+)', raw_url)
+    if url_match:
+        clean = url_match.group(1)
+        # Filtro de seguridad adicional para redes sociales
+        if any(x in clean for x in ['facebook.com', 'fb.watch', 'tiktok.com', 'instagram.com', 'youtube.com', 'youtu.be']):
+            return clean
+    return None
 
 def check_user(ip):
     today = datetime.now().strftime('%Y-%m-%d')
@@ -30,24 +40,31 @@ def home():
     <html lang="es">
     <head>
         <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>TurboLink 🚀 | Descarga Directa</title>
+        <title>TurboLink 🚀 | Descargas Reales</title>
         <style>
-            :root { --cian: #00f2ea; --bg: #050505; --card: #121212; }
+            :root { --cian: #00f2ea; --fucsia: #ff0050; --bg: #050505; --card: #121212; }
             body { background: var(--bg); color: #fff; font-family: sans-serif; margin: 0; padding: 15px; text-align: center; }
             .card { max-width: 450px; margin: 20px auto; background: var(--card); padding: 25px; border-radius: 25px; border: 1px solid #333; }
             h1 { color: var(--cian); text-transform: uppercase; text-shadow: 0 0 10px var(--cian); }
+            .stats { display: flex; justify-content: space-around; font-size: 12px; margin: 15px 0; background: #1a1a1a; padding: 12px; border-radius: 12px; border: 1px solid #333; }
+            .stats b { color: var(--fucsia); font-size: 16px; }
             input { width: 100%; padding: 16px; border-radius: 12px; border: 2px solid #333; background: #000; color: #fff; box-sizing: border-box; font-size: 16px; outline: none; margin-bottom: 10px; }
-            .btn-main { width: 100%; padding: 18px; background: var(--cian); color: #000; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; }
+            .btn-main { width: 100%; padding: 18px; background: var(--cian); color: #000; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
             #previewSection { display: none; margin-top: 25px; border-top: 1px solid #333; padding-top: 20px; }
             .thumb { width: 100%; border-radius: 15px; border: 1px solid #444; margin-bottom: 15px; }
             .support-msg { background: rgba(0, 242, 234, 0.1); color: #2ecc71; padding: 15px; border-radius: 15px; font-size: 13px; line-height: 1.5; border: 1px dashed #00f2ea; margin-bottom: 15px;}
             .btn-dl { width: 100%; padding: 18px; background: #2ecc71; color: #000; border: none; border-radius: 12px; font-weight: bold; font-size: 17px; cursor: pointer; text-decoration: none; display: block; }
             .btn-dl:disabled { background: #333; color: #777; cursor: not-allowed; }
+            footer { margin-top: 40px; font-size: 11px; color: #444; }
         </style>
     </head>
     <body>
         <div class="card">
             <h1>TurboLink</h1>
+            <div class="stats">
+                <div>YT/TikTok: <b id="p-count">-</b></div>
+                <div>Social: <b id="s-count">-</b></div>
+            </div>
             <input type="text" id="urlInput" placeholder="Pega el link aquí...">
             <button id="btnAction" class="btn-main" onclick="analyze()">GENERAR DESCARGA</button>
             <div id="status" style="margin-top:15px; font-weight:bold; color: var(--cian);"></div>
@@ -64,21 +81,25 @@ def home():
                 <button id="waitBtn" class="btn-dl" disabled>DESCARGAR VIDEO</button>
             </div>
         </div>
+        <footer>© 2026 TurboLink Digital</footer>
 
         <script>
             async function analyze() {
-                const url = document.getElementById('urlInput').value; if(!url) return;
+                const url = document.getElementById('urlInput').value.trim(); if(!url) return;
                 const status = document.getElementById('status');
                 const preview = document.getElementById('previewSection');
+                const btn = document.getElementById('btnAction');
                 
-                status.innerText = "⏳ Analizando enlace limpio...";
+                status.innerText = "⏳ Limpiando y Analizando...";
+                btn.disabled = true;
+
                 try {
                     const r = await fetch('/api/get_info?url=' + encodeURIComponent(url));
                     const d = await r.json();
                     if(d.success) {
                         status.innerText = "✅ Video Encontrado";
                         document.getElementById('vThumb').src = d.thumbnail;
-                        // Abrimos el reproductor nativo del navegador como en tu foto
+                        // Abrimos el reproductor nativo como en tu foto de WhatsApp
                         document.getElementById('finalLink').href = "/player?v=" + encodeURIComponent(d.download_url);
                         preview.style.display = 'block';
 
@@ -97,9 +118,19 @@ def home():
                                 finalLink.style.display = "block";
                             }
                         }, 1000);
-                    } else { status.innerText = "❌ " + d.message; }
-                } catch(e) { status.innerText = "❌ Error en la red."; }
+                    } else { status.innerText = "❌ " + d.message; btn.disabled = false; }
+                } catch(e) { status.innerText = "❌ Error de conexión."; btn.disabled = false; }
             }
+
+            async function getStats() {
+                try {
+                    const r = await fetch('/api/user_info');
+                    const d = await r.json();
+                    document.getElementById('p-count').innerText = d.premium;
+                    document.getElementById('s-count').innerText = d.social;
+                } catch(e){}
+            }
+            getStats();
         </script>
     </body>
     </html>
@@ -119,22 +150,26 @@ def player():
 @app.route('/stream')
 def stream():
     video_url = request.args.get('v')
-    r = requests.get(video_url, headers={'User-Agent': 'Mozilla/5.0'}, stream=True)
+    # Identidad de navegador para evitar el bloqueo de Facebook
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+    r = requests.get(video_url, headers=headers, stream=True)
     return Response(stream_with_context(r.iter_content(chunk_size=1024*512)), content_type='video/mp4')
 
 @app.route('/api/get_info')
 def get_info():
-    raw_url = request.args.get('url')
-    url = get_clean_url(raw_url)
-    if not url: return jsonify({"success": False, "message": "Link no detectado."})
+    raw_input = request.args.get('url', '')
+    url = get_clean_url(raw_input)
+    
+    if not url:
+        return jsonify({"success": False, "message": "Link no válido."})
 
-    # IMPORTANTE: Tu API requiere un POST, aquí lo corregimos
     headers = {
         "x-rapidapi-key": API_KEY, 
         "x-rapidapi-host": API_HOST, 
         "Content-Type": "application/json"
     }
     try:
+        # Petición POST a tu API Pro
         r = requests.post(f"https://{API_HOST}/v1/social/autolink", json={"url": url}, headers=headers, timeout=15)
         data = r.json()
         dl_url = data.get('url') or (data.get('medias', [{}])[0].get('url'))
@@ -145,7 +180,11 @@ def get_info():
                 "thumbnail": data.get('thumbnail') or data.get('picture') or ""
             })
     except: pass
-    return jsonify({"success": False, "message": "Video no disponible."})
+    return jsonify({"success": False, "message": "Video privado o no encontrado."})
+
+@app.route('/api/user_info')
+def user_info():
+    return jsonify(check_user(request.remote_addr))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
