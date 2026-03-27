@@ -3,6 +3,7 @@ import requests
 import re
 from flask import Flask, request, jsonify, render_template_string, Response, stream_with_context
 from datetime import datetime
+import urllib.parse
 
 app = Flask(__name__)
 
@@ -13,19 +14,8 @@ API_HOST = "auto-download-all-in-one.p.rapidapi.com"
 user_registry = {}
 
 def get_clean_url(raw_url):
-    """
-    EXTRACTOR BLINDADO: 
-    Busca estrictamente algo que empiece con http y tenga formato de link.
-    Ignora textos como 'attributeStyleMap', 'StylePropertyMap', etc.
-    """
-    # Esta expresión regular busca solo la URL limpia dentro de cualquier texto
     url_match = re.search(r'(https?://[^\s\'"<>]+)', raw_url)
-    if url_match:
-        clean = url_match.group(1)
-        # Filtro de seguridad adicional para redes sociales
-        if any(x in clean for x in ['facebook.com', 'fb.watch', 'tiktok.com', 'instagram.com', 'youtube.com', 'youtu.be']):
-            return clean
-    return None
+    return url_match.group(1) if url_match else None
 
 def check_user(ip):
     today = datetime.now().strftime('%Y-%m-%d')
@@ -53,9 +43,8 @@ def home():
             #previewSection { display: none; margin-top: 25px; border-top: 1px solid #333; padding-top: 20px; }
             .thumb { width: 100%; border-radius: 15px; border: 1px solid #444; margin-bottom: 15px; }
             .support-msg { background: rgba(0, 242, 234, 0.1); color: #2ecc71; padding: 15px; border-radius: 15px; font-size: 13px; line-height: 1.5; border: 1px dashed #00f2ea; margin-bottom: 15px;}
-            .btn-dl { width: 100%; padding: 18px; background: #2ecc71; color: #000; border: none; border-radius: 12px; font-weight: bold; font-size: 17px; cursor: pointer; text-decoration: none; display: block; }
+            .btn-dl { width: 100%; padding: 18px; background: #2ecc71; color: #000; border: none; border-radius: 12px; font-weight: bold; font-size: 17px; cursor: pointer; text-decoration: none; display: block; margin-top: 15px; }
             .btn-dl:disabled { background: #333; color: #777; cursor: not-allowed; }
-            footer { margin-top: 40px; font-size: 11px; color: #444; }
         </style>
     </head>
     <body>
@@ -81,26 +70,24 @@ def home():
                 <button id="waitBtn" class="btn-dl" disabled>DESCARGAR VIDEO</button>
             </div>
         </div>
-        <footer>© 2026 TurboLink Digital</footer>
-
         <script>
             async function analyze() {
-                const url = document.getElementById('urlInput').value.trim(); if(!url) return;
+                const urlInput = document.getElementById('urlInput').value.trim(); if(!urlInput) return;
                 const status = document.getElementById('status');
                 const preview = document.getElementById('previewSection');
                 const btn = document.getElementById('btnAction');
                 
-                status.innerText = "⏳ Limpiando y Analizando...";
+                status.innerText = "⏳ Analizando enlace...";
                 btn.disabled = true;
 
                 try {
-                    const r = await fetch('/api/get_info?url=' + encodeURIComponent(url));
+                    const r = await fetch('/api/get_info?url=' + encodeURIComponent(urlInput));
                     const d = await r.json();
                     if(d.success) {
                         status.innerText = "✅ Video Encontrado";
                         document.getElementById('vThumb').src = d.thumbnail;
-                        // Abrimos el reproductor nativo como en tu foto de WhatsApp
-                        document.getElementById('finalLink').href = "/player?v=" + encodeURIComponent(d.download_url);
+                        // Codificamos la URL del video para que no se rompa el transporte
+                        document.getElementById('finalLink').href = "/player?v=" + btoa(d.download_url);
                         preview.style.display = 'block';
 
                         let timeLeft = 12;
@@ -121,7 +108,6 @@ def home():
                     } else { status.innerText = "❌ " + d.message; btn.disabled = false; }
                 } catch(e) { status.innerText = "❌ Error de conexión."; btn.disabled = false; }
             }
-
             async function getStats() {
                 try {
                     const r = await fetch('/api/user_info');
@@ -138,38 +124,45 @@ def home():
 
 @app.route('/player')
 def player():
-    video_url = request.args.get('v')
-    return render_template_string('''
-    <body style="margin:0; background:#000; display:flex; align-items:center; justify-content:center;">
-        <video controls autoplay style="max-width:100%; max-height:100%;">
-            <source src="/stream?v={{v}}" type="video/mp4">
-        </video>
-    </body>
-    ''', v=video_url)
+    import base64
+    try:
+        # Decodificamos la URL que viene protegida en Base64
+        encoded_url = request.args.get('v')
+        video_url = base64.b64decode(encoded_url).decode('utf-8')
+        return render_template_string('''
+        <body style="margin:0; background:#000; display:flex; align-items:center; justify-content:center;">
+            <video controls autoplay style="max-width:100%; max-height:100%;">
+                <source src="/stream?v={{v}}" type="video/mp4">
+            </video>
+        </body>
+        ''', v=urllib.parse.quote_plus(video_url))
+    except:
+        return "Error al cargar reproductor", 400
 
 @app.route('/stream')
 def stream():
-    video_url = request.args.get('v')
-    # Identidad de navegador para evitar el bloqueo de Facebook
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
-    r = requests.get(video_url, headers=headers, stream=True)
-    return Response(stream_with_context(r.iter_content(chunk_size=1024*512)), content_type='video/mp4')
+    video_url = urllib.parse.unquote_plus(request.args.get('v'))
+    # Cabeceras de simulación de navegador real
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
+        'Referer': 'https://www.facebook.com/'
+    }
+    try:
+        r = requests.get(video_url, headers=headers, stream=True, timeout=20)
+        return Response(stream_with_context(r.iter_content(chunk_size=1024*1024)), 
+                        content_type='video/mp4',
+                        headers={'Content-Disposition': 'inline; filename="video.mp4"'})
+    except Exception as e:
+        return str(e), 500
 
 @app.route('/api/get_info')
 def get_info():
     raw_input = request.args.get('url', '')
     url = get_clean_url(raw_input)
-    
-    if not url:
-        return jsonify({"success": False, "message": "Link no válido."})
+    if not url: return jsonify({"success": False, "message": "Link no válido."})
 
-    headers = {
-        "x-rapidapi-key": API_KEY, 
-        "x-rapidapi-host": API_HOST, 
-        "Content-Type": "application/json"
-    }
+    headers = {"x-rapidapi-key": API_KEY, "x-rapidapi-host": API_HOST, "Content-Type": "application/json"}
     try:
-        # Petición POST a tu API Pro
         r = requests.post(f"https://{API_HOST}/v1/social/autolink", json={"url": url}, headers=headers, timeout=15)
         data = r.json()
         dl_url = data.get('url') or (data.get('medias', [{}])[0].get('url'))
@@ -180,7 +173,7 @@ def get_info():
                 "thumbnail": data.get('thumbnail') or data.get('picture') or ""
             })
     except: pass
-    return jsonify({"success": False, "message": "Video privado o no encontrado."})
+    return jsonify({"success": False, "message": "Video no disponible."})
 
 @app.route('/api/user_info')
 def user_info():
